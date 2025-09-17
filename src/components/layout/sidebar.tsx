@@ -1,173 +1,164 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect } f
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { 
-  House, 
-  Package, 
-  ShoppingCart, 
-  ClipboardText, 
-  CheckCircle, 
-  Scan,
-  ChartLine,
-  Robot,
-  Gear,
-  IconProps
-} from '@phosphor-icons/react'
 import { useAuth } from '../auth-provider'
-import { cn } from '@/lib/utils'
-import { ForwardRefExoticComponent } from 'react'
-import { Order } from '@/types'
-import { apiService } from '@/services/api'
+  Shoppin
+  House, 
+  Scan,
+  ShoppingCart, 
+import { cn } f
+import {
 
-interface NavItem {
-  icon: ForwardRefExoticComponent<IconProps>
-  label: string
+  icon: For
   key: string
-  roles: string[]
-  badge?: string
-}
+  badge
 
-const navItems: NavItem[] = [
-  {
-    icon: House,
+
     label: 'Dashboard',
-    key: 'dashboard',
-    roles: ['SM', 'DM', 'FM', 'COST_ANALYST', 'ADMIN']
+    roles: ['SM', 'D
+  {
+ 
+
+  {
+    label: '
+    roles: ['SM
+  {
+    label: 'Appr
+    roles: ['DM', 'FM']
+  {
+ 
+
+  {
+   
+    id: 'dashboard',
+    label: 'Dashboard',
+    icon: House,
+    permissions: []
   },
   {
+    id: 'catalog',
+    label: 'Order Supplies',
     icon: Package,
-    label: 'Product Catalog',
-    key: 'catalog',
-    roles: ['SM', 'DM', 'FM']
+    permissions: ['catalog:view'],
+    roles: ['SM']
   },
   {
-    icon: ShoppingCart,
+    id: 'orders',
     label: 'My Orders',
-    key: 'orders',
+    icon: ShoppingCart,
+    permissions: ['orders:view_own', 'orders:view_district'],
     roles: ['SM', 'DM', 'FM']
   },
   {
-    icon: ClipboardText,
-    label: 'Approval Queue',
-    key: 'approvals',
+    id: 'approvals',
+    label: 'Approvals',
+    icon: CheckSquare,
+    badge: 7,
+    permissions: ['approvals:view_district'],
     roles: ['DM', 'FM']
   },
   {
-    icon: CheckCircle,
+    id: 'fulfillment',
     label: 'Fulfillment',
-    key: 'fulfillment',
-    roles: ['FM']
-  },
-  {
-    icon: Scan,
-    label: 'Receiving',
-    key: 'receiving',
-    roles: ['SM', 'FM']
-  },
-  {
-    icon: Robot,
-    label: 'Replenishment',
-    key: 'replenishment',
-    roles: ['FM', 'COST_ANALYST', 'ADMIN']
-  },
-  {
-    icon: ChartLine,
-    label: 'Analytics',
-    key: 'analytics',
-    roles: ['COST_ANALYST', 'FM', 'ADMIN']
-  },
-  {
-    icon: Gear,
-    label: 'Settings',
-    key: 'settings',
-    roles: ['ADMIN']
+    icon: Truck,
+    badge: 3,
+      const inboundCount = orders.filter
+        (user.rol
+    
+   
   }
-]
-
-interface SidebarProps {
-  activeView: string
-  onViewChange: (view: string) => void
-}
-
-export function Sidebar({ activeView, onViewChange }: SidebarProps) {
-  const { user } = useAuth()
-  const [orders, setOrders] = useState<Order[]>([])
-
-  useEffect(() => {
-    if (!user) return
-    
-    const loadOrders = async () => {
-      try {
-        const ordersData = await apiService.getOrders()
-        setOrders(ordersData)
-      } catch (error) {
-        console.error('Error loading orders for sidebar:', error)
-      }
-    }
-    
-    loadOrders()
-  }, [user])
-
-  if (!user) return null
-
-  const allowedItems = navItems.filter(item => 
-    item.roles.includes(user.role)
-  )
-
-  // Calculate dynamic badges
-  const getDynamicBadge = (itemKey: string) => {
-    if (itemKey === 'approvals' && ['DM', 'FM'].includes(user.role)) {
-      const pendingCount = orders.filter(order => {
-        if (user.role === 'DM') return order.status === 'PENDING_DM_APPROVAL'
-        if (user.role === 'FM') return order.status === 'PENDING_FM_APPROVAL'
-        return false
-      }).length
-      return pendingCount > 0 ? pendingCount.toString() : undefined
-    }
-    
-    if (itemKey === 'receiving' && ['SM', 'FM'].includes(user.role)) {
-      const inboundCount = orders.filter(order => 
-        ['IN_TRANSIT', 'PARTIALLY_DELIVERED'].includes(order.status) &&
-        (user.role === 'FM' || order.store_id === user.assignment.id)
-      ).length
-      return inboundCount > 0 ? inboundCount.toString() : undefined
-    }
-    
-    return undefined
-  }
-
   return (
-    <aside className="w-64 border-r bg-card/30 h-[calc(100vh-73px)]">
-      <nav className="p-4 space-y-2">
-        {allowedItems.map((item) => {
+      <nav className="p-
           const Icon = item.icon
-          const isActive = activeView === item.key
-          const badgeText = getDynamicBadge(item.key)
-          
-          return (
-            <Button
-              key={item.key}
-              variant={isActive ? "default" : "ghost"}
-              className={cn(
-                "w-full justify-start gap-3 h-11",
-                isActive && "bg-primary text-primary-foreground"
-              )}
-              onClick={() => onViewChange(item.key)}
-            >
-              <Icon size={20} weight={isActive ? "fill" : "regular"} />
-              <span className="flex-1 text-left">{item.label}</span>
+          const badgeTe
+    
+   
+              classN
+                isActiv
+              onCli
+              <Icon size={20} weight={is
               {badgeText && (
-                <Badge 
-                  variant={isActive ? "secondary" : "outline"}
-                  className="h-5 px-2 text-xs"
-                >
-                  {badgeText}
+    
+   
                 </Badge>
-              )}
             </Button>
-          )
         })}
-      </nav>
     </aside>
-  )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
