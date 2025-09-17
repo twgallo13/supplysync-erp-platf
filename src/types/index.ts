@@ -138,6 +138,20 @@ export interface ReplenishmentRequest {
   priority: 'HIGH' | 'MEDIUM' | 'LOW'
 }
 
+// Enhanced replenishment suggestion for UI
+export interface ReplenishmentSuggestion {
+  suggestion_id: string
+  product_id: string
+  store_id: string
+  suggested_quantity: number
+  reason: 'LOW_STOCK' | 'SEASONAL' | 'PROMOTIONAL' | 'PREDICTIVE'
+  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+  cost_impact: number
+  created_at: string
+  expires_at: string
+  auto_approved: boolean
+}
+
 // Allotment request
 export interface AllotmentRequest {
   request_id: string
@@ -146,8 +160,10 @@ export interface AllotmentRequest {
   requested_days: number
   current_days: number
   reason_code: string
+  comments?: string
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
-  created_at: string
+  requested_by: string
+  requested_at: string
   reviewed_by?: string
   reviewed_at?: string
 }

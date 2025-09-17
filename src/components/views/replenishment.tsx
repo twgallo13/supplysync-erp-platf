@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Progress } from '@/components/ui/progress'
 import { 
   Robot, 
   TrendUp, 
@@ -17,17 +18,88 @@ import {
   Calculator,
   Eye,
   Gear,
-  Play
+  Play,
+  Star,
+  Truck,
+  CurrencyDollar,
+  Target
 } from '@phosphor-icons/react'
 import { useAuth } from '../auth-provider'
-import { mockProducts, mockStores } from '@/lib/mock-data'
-import { ReplenishmentSuggestion, AllotmentRequest } from '@/lib/types'
+import { ReplenishmentRequest, ReplenishmentSuggestion, AllotmentRequest, Product, Store } from '@/types'
+import { ReplenishmentEngine, DEFAULT_REPLENISHMENT_CONFIG } from '@/services/replenishment-engine'
+import { VendorSelectionService } from '@/services/vendor-selection'
+import { ReplenishmentScheduler } from '@/services/replenishment-scheduler'
 import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
 
 interface ReplenishmentProps {
   onViewChange: (view: string) => void
 }
+
+// Mock data for demonstration
+const mockProducts: Product[] = [
+  {
+    product_id: 'prod_paper_001',
+    sku: 'PT-001',
+    display_name: 'Paper Towels, 12-pack',
+    description: 'Absorbent paper towels for cleaning',
+    category: 'Cleaning Supplies',
+    pack_quantity: 12,
+    requires_dm_approval: false,
+    is_active: true,
+    tags: ['cleaning', 'paper'],
+    vendors: []
+  },
+  {
+    product_id: 'prod_receipt_001',
+    sku: 'RT-001',
+    display_name: 'Receipt Paper Rolls',
+    description: 'Thermal receipt paper rolls',
+    category: 'POS Supplies',
+    pack_quantity: 50,
+    requires_dm_approval: false,
+    is_active: true,
+    tags: ['pos', 'paper'],
+    vendors: []
+  },
+  {
+    product_id: 'prod_cleaner_001',
+    sku: 'CL-001',
+    display_name: 'Glass Cleaner, 32oz',
+    description: 'Professional glass cleaning solution',
+    category: 'Cleaning Supplies',
+    pack_quantity: 1,
+    requires_dm_approval: false,
+    is_active: true,
+    tags: ['cleaning', 'glass'],
+    vendors: []
+  }
+]
+
+const mockStores: Store[] = [
+  {
+    store_id: 's_12345',
+    store_name: 'Main Street Store #12345',
+    district_id: 'd_67890',
+    address: {
+      street: '123 Main St',
+      city: 'Anytown',
+      state: 'CA',
+      zip: '12345'
+    }
+  },
+  {
+    store_id: 's_12346',
+    store_name: 'Oak Avenue Store #12346',
+    district_id: 'd_67890',
+    address: {
+      street: '456 Oak Ave',
+      city: 'Somewhere',
+      state: 'CA',
+      zip: '12346'
+    }
+  }
+]
 
 const mockSuggestions: ReplenishmentSuggestion[] = [
   {
@@ -101,6 +173,12 @@ export function Replenishment({ onViewChange }: ReplenishmentProps) {
   const [suggestions, setSuggestions] = useKV<ReplenishmentSuggestion[]>('replenishment-suggestions', mockSuggestions)
   const [allotmentRequests, setAllotmentRequests] = useKV<AllotmentRequest[]>('allotment-requests', mockAllotmentRequests)
   const [selectedSuggestion, setSelectedSuggestion] = useState<ReplenishmentSuggestion | null>(null)
+  const [isAnalysisRunning, setIsAnalysisRunning] = useState(false)
+  
+  // Initialize automation services
+  const [replenishmentEngine] = useState(() => new ReplenishmentEngine(DEFAULT_REPLENISHMENT_CONFIG))
+  const [vendorService] = useState(() => new VendorSelectionService())
+  const [scheduler] = useState(() => new ReplenishmentScheduler(DEFAULT_REPLENISHMENT_CONFIG))
 
   if (!user || !['FM', 'ADMIN', 'COST_ANALYST'].includes(user.role)) {
     return (
@@ -165,15 +243,51 @@ export function Replenishment({ onViewChange }: ReplenishmentProps) {
     toast.success('Suggestion rejected')
   }
 
-  const runReplenishmentEngine = () => {
-    toast.promise(
-      new Promise(resolve => setTimeout(resolve, 2000)),
-      {
-        loading: 'Running replenishment analysis...',
-        success: 'Analysis complete! 3 new suggestions generated',
-        error: 'Analysis failed'
-      }
-    )
+  const runReplenishmentEngine = async () => {
+    if (!user) return
+    
+    setIsAnalysisRunning(true)
+    
+    try {
+      // Simulate running replenishment analysis
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      
+      // Generate new suggestions based on analysis
+      const newSuggestions: ReplenishmentSuggestion[] = [
+        {
+          suggestion_id: `repl_${Date.now()}_1`,
+          product_id: 'prod_paper_001',
+          store_id: 's_12345',
+          suggested_quantity: 6,
+          reason: 'LOW_STOCK',
+          priority: 'HIGH',
+          cost_impact: 67.44,
+          created_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+          auto_approved: false
+        },
+        {
+          suggestion_id: `repl_${Date.now()}_2`,
+          product_id: 'prod_receipt_001',
+          store_id: 's_12346',
+          suggested_quantity: 10,
+          reason: 'PREDICTIVE',
+          priority: 'MEDIUM',
+          cost_impact: 89.99,
+          created_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+          auto_approved: false
+        }
+      ]
+      
+      setSuggestions(current => [...(current || []), ...newSuggestions])
+      toast.success(`Analysis complete! ${newSuggestions.length} new suggestions generated`)
+      
+    } catch (error) {
+      toast.error('Analysis failed: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    } finally {
+      setIsAnalysisRunning(false)
+    }
   }
 
   const approveAllotmentRequest = (requestId: string) => {
@@ -290,9 +404,22 @@ export function Replenishment({ onViewChange }: ReplenishmentProps) {
             AI-powered supply chain optimization and inventory management
           </p>
         </div>
-        <Button onClick={runReplenishmentEngine} className="gap-2">
-          <Play size={18} />
-          Run Analysis
+        <Button 
+          onClick={runReplenishmentEngine} 
+          disabled={isAnalysisRunning}
+          className="gap-2"
+        >
+          {isAnalysisRunning ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+              Analyzing...
+            </>
+          ) : (
+            <>
+              <Play size={18} />
+              Run Analysis
+            </>
+          )}
         </Button>
       </div>
 
@@ -515,23 +642,154 @@ export function Replenishment({ onViewChange }: ReplenishmentProps) {
         </TabsContent>
 
         <TabsContent value="rules" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Replenishment Rules</CardTitle>
-              <CardDescription>
-                Configure reorder points, safety stock levels, and seasonal adjustments
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <Gear size={48} className="mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Rules Configuration</h3>
-                <p className="text-muted-foreground">
-                  Advanced rule configuration interface for fine-tuning replenishment algorithms.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Vendor Selection Rules</CardTitle>
+                <CardDescription>
+                  Deterministic vendor selection: cost → lead time → preference → SLA
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <CurrencyDollar size={20} className="text-green-600" />
+                    <span className="font-medium">Lowest Cost Priority</span>
+                  </div>
+                  <Badge>Primary</Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Clock size={20} className="text-blue-600" />
+                    <span className="font-medium">Shortest Lead Time</span>
+                  </div>
+                  <Badge variant="secondary">Secondary</Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Star size={20} className="text-amber-600" />
+                    <span className="font-medium">Preferred Vendor</span>
+                  </div>
+                  <Badge variant="outline">Tertiary</Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Target size={20} className="text-purple-600" />
+                    <span className="font-medium">SLA Performance</span>
+                  </div>
+                  <Badge variant="outline">Quaternary</Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Replenishment Parameters</CardTitle>
+                <CardDescription>
+                  Core formulas and calculation settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Days of Cover by Store Tier</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-center p-2 bg-muted/50 rounded">
+                      <p className="text-sm text-muted-foreground">Premium</p>
+                      <p className="font-semibold">90 days</p>
+                    </div>
+                    <div className="text-center p-2 bg-muted/50 rounded">
+                      <p className="text-sm text-muted-foreground">Standard</p>
+                      <p className="font-semibold">60 days</p>
+                    </div>
+                    <div className="text-center p-2 bg-muted/50 rounded">
+                      <p className="text-sm text-muted-foreground">Basic</p>
+                      <p className="font-semibold">30 days</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Safety Stock Multiplier</Label>
+                  <div className="flex items-center gap-2">
+                    <Progress value={75} className="flex-1" />
+                    <span className="text-sm font-medium">1.5x</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Forecasting Horizon</Label>
+                  <div className="flex items-center gap-2">
+                    <Progress value={90} className="flex-1" />
+                    <span className="text-sm font-medium">90 days</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Automation Settings</CardTitle>
+                <CardDescription>
+                  Configure when orders are automatically created and approved
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Auto-approve low-risk items</p>
+                    <p className="text-sm text-muted-foreground">Items under $100 with preferred vendors</p>
+                  </div>
+                  <Badge className="bg-green-100 text-green-800">Enabled</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Critical stockout alerts</p>
+                    <p className="text-sm text-muted-foreground">Immediate notification when below safety stock</p>
+                  </div>
+                  <Badge className="bg-green-100 text-green-800">Enabled</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Seasonal adjustments</p>
+                    <p className="text-sm text-muted-foreground">Apply seasonal demand patterns to forecasting</p>
+                  </div>
+                  <Badge className="bg-green-100 text-green-800">Enabled</Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Functional Need Groups</CardTitle>
+                <CardDescription>
+                  Products grouped by function for intelligent substitution
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">Glass Cleaner</p>
+                    <p className="text-sm text-muted-foreground">3 products, normalized per ounce</p>
+                  </div>
+                  <Badge variant="outline">Active</Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">Paper Towels</p>
+                    <p className="text-sm text-muted-foreground">5 products, normalized per sheet</p>
+                  </div>
+                  <Badge variant="outline">Active</Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">Hand Sanitizer</p>
+                    <p className="text-sm text-muted-foreground">4 products, normalized per ounce</p>
+                  </div>
+                  <Badge variant="outline">Active</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
