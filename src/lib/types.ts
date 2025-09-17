@@ -46,6 +46,9 @@ export interface Product {
   requires_dm_approval: boolean
   is_active: boolean
   tags: string[]
+  needGroup?: string
+  equivalentUnit?: { value: number; unit: string }
+  supplyDurationDays?: number
   vendors: Vendor[]
 }
 
@@ -55,6 +58,10 @@ export interface Vendor {
   cost_per_item: number
   lead_time_days: number
   is_preferred: boolean
+  vendorSkuMap?: {
+    sku: string
+    barcodeAliases?: string[]
+  }
 }
 
 export interface LineItem {

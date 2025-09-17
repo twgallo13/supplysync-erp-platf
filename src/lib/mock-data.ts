@@ -80,14 +80,22 @@ export const mockProducts: Product[] = [
         vendor_sku: 'ST-CP8511',
         cost_per_item: 24.99,
         lead_time_days: 2,
-        is_preferred: true
+        is_preferred: true,
+        vendorSkuMap: {
+          sku: 'ST-CP8511',
+          barcodeAliases: ['012345678901', '012345678902']
+        }
       },
       {
         vendor_id: 'ven_costco',
         vendor_sku: 'CC-PAPER-001',
         cost_per_item: 22.50,
         lead_time_days: 3,
-        is_preferred: false
+        is_preferred: false,
+        vendorSkuMap: {
+          sku: 'CC-PAPER-001',
+          barcodeAliases: ['012345678903', '012345678904']
+        }
       }
     ]
   },
@@ -107,7 +115,11 @@ export const mockProducts: Product[] = [
         vendor_sku: 'SYS-GC20',
         cost_per_item: 4.75,
         lead_time_days: 1,
-        is_preferred: true
+        is_preferred: true,
+        vendorSkuMap: {
+          sku: 'SYS-GC20',
+          barcodeAliases: ['012345678905', '012345678906']
+        }
       }
     ]
   },
@@ -127,7 +139,11 @@ export const mockProducts: Product[] = [
         vendor_sku: 'PM-THERM-12',
         cost_per_item: 38.99,
         lead_time_days: 2,
-        is_preferred: true
+        is_preferred: true,
+        vendorSkuMap: {
+          sku: 'PM-THERM-12',
+          barcodeAliases: ['012345678907', '012345678908']
+        }
       }
     ]
   },
@@ -147,7 +163,11 @@ export const mockProducts: Product[] = [
         vendor_sku: 'UL-BAG-1000',
         cost_per_item: 15.25,
         lead_time_days: 3,
-        is_preferred: true
+        is_preferred: true,
+        vendorSkuMap: {
+          sku: 'UL-BAG-1000',
+          barcodeAliases: ['012345678909', '012345678910']
+        }
       }
     ]
   },
@@ -167,7 +187,11 @@ export const mockProducts: Product[] = [
         vendor_sku: 'PU-HS-GAL',
         cost_per_item: 12.99,
         lead_time_days: 1,
-        is_preferred: true
+        is_preferred: true,
+        vendorSkuMap: {
+          sku: 'PU-HS-GAL',
+          barcodeAliases: ['012345678911', '012345678912']
+        }
       }
     ]
   }

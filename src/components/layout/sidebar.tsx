@@ -14,6 +14,9 @@ import {
 import { useAuth } from '../auth-provider'
 import { cn } from '@/lib/utils'
 import { ForwardRefExoticComponent } from 'react'
+import { mockOrders } from '@/lib/mock-data'
+import { useKV } from '@github/spark/hooks'
+import { Order } from '@/lib/types'
 
 interface NavItem {
   icon: ForwardRefExoticComponent<IconProps>
@@ -46,8 +49,7 @@ const navItems: NavItem[] = [
     icon: ClipboardText,
     label: 'Approval Queue',
     key: 'approvals',
-    roles: ['DM', 'FM'],
-    badge: '3'
+    roles: ['DM', 'FM']
   },
   {
     icon: CheckCircle,
@@ -82,6 +84,7 @@ interface SidebarProps {
 
 export function Sidebar({ activeView, onViewChange }: SidebarProps) {
   const { user } = useAuth()
+  const [userOrders] = useKV<Order[]>('user-orders', [])
 
   if (!user) return null
 
@@ -89,12 +92,36 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
     item.roles.includes(user.role)
   )
 
+  // Calculate dynamic badges
+  const allOrders = [...mockOrders, ...(userOrders || [])]
+  const getDynamicBadge = (itemKey: string) => {
+    if (itemKey === 'approvals' && ['DM', 'FM'].includes(user.role)) {
+      const pendingCount = allOrders.filter(order => {
+        if (user.role === 'DM') return order.status === 'PENDING_DM_APPROVAL'
+        if (user.role === 'FM') return order.status === 'PENDING_FM_APPROVAL'
+        return false
+      }).length
+      return pendingCount > 0 ? pendingCount.toString() : undefined
+    }
+    
+    if (itemKey === 'receiving' && ['SM', 'FM'].includes(user.role)) {
+      const inboundCount = allOrders.filter(order => 
+        ['IN_TRANSIT', 'PARTIALLY_DELIVERED'].includes(order.status) &&
+        (user.role === 'FM' || order.store_id === user.assignment.id)
+      ).length
+      return inboundCount > 0 ? inboundCount.toString() : undefined
+    }
+    
+    return undefined
+  }
+
   return (
     <aside className="w-64 border-r bg-card/30 h-[calc(100vh-73px)]">
       <nav className="p-4 space-y-2">
         {allowedItems.map((item) => {
           const Icon = item.icon
           const isActive = activeView === item.key
+          const badgeText = getDynamicBadge(item.key)
           
           return (
             <Button
@@ -108,12 +135,12 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
             >
               <Icon size={20} weight={isActive ? "fill" : "regular"} />
               <span className="flex-1 text-left">{item.label}</span>
-              {item.badge && (
+              {badgeText && (
                 <Badge 
                   variant={isActive ? "secondary" : "outline"}
                   className="h-5 px-2 text-xs"
                 >
-                  {item.badge}
+                  {badgeText}
                 </Badge>
               )}
             </Button>

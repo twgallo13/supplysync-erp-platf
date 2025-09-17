@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -64,6 +64,14 @@ export function Receiving({ onViewChange }: ReceivingProps) {
   const [quantityInput, setQuantityInput] = useState('')
   const [discrepancyReason, setDiscrepancyReason] = useState('')
   const [notes, setNotes] = useState('')
+  const barcodeInputRef = useRef<HTMLInputElement>(null)
+
+  // Auto-focus barcode input when dialog opens and mode changes
+  useEffect(() => {
+    if (selectedOrder && ['case', 'piece'].includes(receivingMode)) {
+      setTimeout(() => barcodeInputRef.current?.focus(), 100)
+    }
+  }, [selectedOrder, receivingMode])
 
   if (!user || !['SM', 'FM'].includes(user.role)) {
     return (
@@ -86,10 +94,28 @@ export function Receiving({ onViewChange }: ReceivingProps) {
   }
 
   const getProductByBarcode = (barcode: string) => {
-    // In a real system, this would check vendor SKU mapping and barcode aliases
+    // Check exact SKU match first
+    let product = mockProducts.find(p => p.sku === barcode)
+    if (product) return product
+
+    // Check vendor SKU mapping
+    product = mockProducts.find(p => 
+      p.vendors.some(v => v.vendor_sku === barcode)
+    )
+    if (product) return product
+
+    // Check barcode aliases if they exist
+    product = mockProducts.find(p => 
+      p.vendors.some(v => 
+        v.vendorSkuMap?.barcodeAliases?.includes(barcode)
+      )
+    )
+    if (product) return product
+
+    // Partial match for demo purposes
     return mockProducts.find(p => 
-      p.vendors.some(v => v.vendor_sku.includes(barcode)) ||
-      p.sku.includes(barcode)
+      p.sku.toLowerCase().includes(barcode.toLowerCase()) ||
+      p.display_name.toLowerCase().includes(barcode.toLowerCase())
     )
   }
 
@@ -110,14 +136,22 @@ export function Receiving({ onViewChange }: ReceivingProps) {
   }
 
   const handleBarcodeReceive = (order: Order) => {
-    if (!barcodeInput) {
+    if (!barcodeInput.trim()) {
       toast.error('Please scan or enter a barcode')
       return
     }
 
-    const product = getProductByBarcode(barcodeInput)
+    const product = getProductByBarcode(barcodeInput.trim())
     if (!product) {
-      toast.error('Unknown barcode. Please verify or enter manually.')
+      toast.error('Unknown barcode. Create alias or scan different item.', {
+        action: {
+          label: 'Create Alias',
+          onClick: () => {
+            toast.success('Barcode alias creation would be handled here')
+            setBarcodeInput('')
+          }
+        }
+      })
       return
     }
 
@@ -127,9 +161,20 @@ export function Receiving({ onViewChange }: ReceivingProps) {
       return
     }
 
-    const quantity = receivingMode === 'case' 
-      ? (product.pack_quantity || 1) 
-      : parseInt(quantityInput) || 1
+    // Calculate quantity based on receiving mode
+    let quantity = 1
+    if (receivingMode === 'case') {
+      quantity = product.pack_quantity || 1
+    } else if (receivingMode === 'piece' && quantityInput) {
+      quantity = parseInt(quantityInput) || 1
+    }
+
+    // Check if we're not over-receiving
+    const alreadyReceived = getReceivedQuantity(order.order_id, product.product_id)
+    if (alreadyReceived + quantity > lineItem.quantity) {
+      toast.error(`Cannot receive ${quantity} items. Only ${lineItem.quantity - alreadyReceived} remaining.`)
+      return
+    }
 
     const entry: ReceivingEntry = {
       order_id: order.order_id,
@@ -137,7 +182,7 @@ export function Receiving({ onViewChange }: ReceivingProps) {
       expected_quantity: lineItem.quantity,
       received_quantity: quantity,
       receiving_mode: receivingMode as 'case' | 'piece',
-      barcode_scanned: barcodeInput,
+      barcode_scanned: barcodeInput.trim(),
       received_at: new Date().toISOString(),
       received_by: user.user_id
     }
@@ -229,16 +274,28 @@ export function Receiving({ onViewChange }: ReceivingProps) {
                   <Label htmlFor="barcode-input">Barcode / UPC</Label>
                   <div className="flex gap-2">
                     <Input
+                      ref={barcodeInputRef}
                       id="barcode-input"
                       placeholder="Scan or type barcode..."
                       value={barcodeInput}
                       onChange={(e) => setBarcodeInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && selectedOrder) {
+                          e.preventDefault()
+                          handleBarcodeReceive(selectedOrder)
+                        }
+                      }}
                       className="flex-1"
+                      autoComplete="off"
+                      spellCheck={false}
                     />
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" title="Focus barcode input">
                       <Scan size={16} />
                     </Button>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Try scanning: 012345678901, ST-CP8511, or SKU-PP-8511
+                  </p>
                 </div>
                 
                 {receivingMode === 'piece' && (

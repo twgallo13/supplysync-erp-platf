@@ -3,6 +3,9 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { SignOut, Bell } from '@phosphor-icons/react'
 import { useAuth } from '../auth-provider'
+import { mockOrders } from '@/lib/mock-data'
+import { useKV } from '@github/spark/hooks'
+import { Order } from '@/lib/types'
 
 const roleLabels = {
   SM: 'Store Manager',
@@ -14,6 +17,7 @@ const roleLabels = {
 
 export function Header() {
   const { user, logout } = useAuth()
+  const [userOrders] = useKV<Order[]>('user-orders', [])
 
   if (!user) return null
 
@@ -22,6 +26,22 @@ export function Header() {
     .map(n => n[0])
     .join('')
     .toUpperCase()
+
+  // Calculate notification count based on user role
+  const allOrders = [...mockOrders, ...(userOrders || [])]
+  let notificationCount = 0
+  
+  if (user.role === 'DM') {
+    notificationCount = allOrders.filter(order => order.status === 'PENDING_DM_APPROVAL').length
+  } else if (user.role === 'FM') {
+    notificationCount = allOrders.filter(order => order.status === 'PENDING_FM_APPROVAL').length
+  } else if (user.role === 'SM') {
+    // Count orders in transit for store managers
+    notificationCount = allOrders.filter(order => 
+      order.store_id === user.assignment.id && 
+      ['IN_TRANSIT', 'PARTIALLY_DELIVERED'].includes(order.status)
+    ).length
+  }
 
   return (
     <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -34,9 +54,11 @@ export function Header() {
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" className="relative">
             <Bell size={18} />
-            <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center">
-              2
-            </span>
+            {notificationCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                {notificationCount > 9 ? '9+' : notificationCount}
+              </span>
+            )}
           </Button>
 
           <div className="flex items-center gap-3">
