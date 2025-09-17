@@ -3,8 +3,25 @@
  * Implements automated replenishment logic according to SupplySync ERP specification v8.1
  */
 
-import { Product, Store, Vendor, ReplenishmentRequest, LineItem } from '@/types'
+import { Product, Store, Vendor, LineItem } from '@/types'
 import { MLForecastingService, createMLForecastingService, ExternalFactors } from './ml-forecasting'
+
+// Replenishment request interface
+export interface ReplenishmentRequest {
+  product_id: string
+  store_id: string
+  current_quantity: number
+  reorder_point: number
+  target_quantity: number
+  suggested_vendor_id: string
+  calculated_cost: number
+  priority: 'HIGH' | 'MEDIUM' | 'LOW'
+  ml_forecast?: {
+    confidence: number
+    seasonality_factor: number
+    predicted_daily_usage: number
+  }
+}
 
 // Configuration for replenishment calculations
 export interface ReplenishmentConfig {

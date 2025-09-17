@@ -33,8 +33,9 @@ import { useAuth } from '../auth-provider'
 import { ReplenishmentRequest, ReplenishmentSuggestion, AllotmentRequest, Product, Store } from '@/types'
 import { ReplenishmentEngine, DEFAULT_REPLENISHMENT_CONFIG } from '@/services/replenishment-engine'
 import { VendorSelectionService } from '@/services/vendor-selection'
-import { ReplenishmentScheduler } from '@/services/replenishment-scheduler'
+import { ReplenishmentScheduler, DEFAULT_SCHEDULER_CONFIG, createReplenishmentScheduler } from '@/services/replenishment-scheduler'
 import { createSeasonalReplenishmentService, DEFAULT_SEASONAL_EVENTS } from '@/services/seasonal-replenishment'
+import { MLForecastingService, createMLForecastingService, ForecastResult, ExternalFactors } from '@/services/ml-forecasting'
 import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
 
@@ -198,6 +199,11 @@ export function Replenishment({ onViewChange }: ReplenishmentProps) {
       alert_type: string
       impact: string
     }>
+    mlPerformance: {
+      forecastsGenerated: number
+      averageConfidence: number
+      modelAccuracy: number
+    }
     lastUpdated: string | null
   }
 
@@ -205,14 +211,20 @@ export function Replenishment({ onViewChange }: ReplenishmentProps) {
     highDemandPeriods: [],
     stockoutRisks: [],
     weatherAlerts: [],
+    mlPerformance: {
+      forecastsGenerated: 0,
+      averageConfidence: 0.85,
+      modelAccuracy: 0.87
+    },
     lastUpdated: null
   })
   
   // Initialize automation services
   const [replenishmentEngine] = useState(() => new ReplenishmentEngine(DEFAULT_REPLENISHMENT_CONFIG))
   const [vendorService] = useState(() => new VendorSelectionService())
-  const [scheduler] = useState(() => new ReplenishmentScheduler(DEFAULT_REPLENISHMENT_CONFIG))
+  const [scheduler] = useState(() => createReplenishmentScheduler())
   const [seasonalService] = useState(() => createSeasonalReplenishmentService(replenishmentEngine))
+  const [mlForecasting] = useState(() => createMLForecastingService())
 
   if (!user || !['FM', 'ADMIN', 'COST_ANALYST'].includes(user.role)) {
     return (
@@ -358,6 +370,11 @@ export function Replenishment({ onViewChange }: ReplenishmentProps) {
               impact: 'Increased cleaning supply demand expected'
             }
           ],
+          mlPerformance: {
+            forecastsGenerated: 127,
+            averageConfidence: 0.89,
+            modelAccuracy: 0.91
+          },
           lastUpdated: new Date().toISOString()
         })
         
@@ -614,6 +631,108 @@ export function Replenishment({ onViewChange }: ReplenishmentProps) {
                     <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
                       <span className="text-sm">Moving Average</span>
                       <Badge variant="outline" className="text-xs">Weight: 10%</Badge>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain size={20} className="text-purple-600" />
+                  ML Demand Forecasting
+                </CardTitle>
+                <CardDescription>
+                  Advanced machine learning predictions for demand patterns and inventory needs
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-3 bg-purple-50 rounded-lg text-center">
+                      <Brain size={20} className="mx-auto text-purple-600 mb-2" />
+                      <p className="text-lg font-semibold text-purple-800">
+                        {seasonalInsights?.mlPerformance?.forecastsGenerated || 0}
+                      </p>
+                      <p className="text-xs text-purple-600">ML Forecasts Generated</p>
+                    </div>
+                    <div className="p-3 bg-green-50 rounded-lg text-center">
+                      <Target size={20} className="mx-auto text-green-600 mb-2" />
+                      <p className="text-lg font-semibold text-green-800">
+                        {((seasonalInsights?.mlPerformance?.averageConfidence || 0.85) * 100).toFixed(1)}%
+                      </p>
+                      <p className="text-xs text-green-600">Average Confidence</p>
+                    </div>
+                    <div className="p-3 bg-blue-50 rounded-lg text-center">
+                      <ChartLine size={20} className="mx-auto text-blue-600 mb-2" />
+                      <p className="text-lg font-semibold text-blue-800">
+                        {((seasonalInsights?.mlPerformance?.modelAccuracy || 0.87) * 100).toFixed(1)}%
+                      </p>
+                      <p className="text-xs text-blue-600">Model Accuracy</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="font-medium">Top ML Insights</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <TrendUp size={16} className="text-green-600" />
+                          <div>
+                            <p className="text-sm font-medium">Seasonal Demand Increase</p>
+                            <p className="text-xs text-muted-foreground">Holiday cleaning supplies</p>
+                          </div>
+                        </div>
+                        <Badge className="bg-green-100 text-green-800">+15% Dec</Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Brain size={16} className="text-purple-600" />
+                          <div>
+                            <p className="text-sm font-medium">Pattern Recognition</p>
+                            <p className="text-xs text-muted-foreground">Weekly peak: Monday mornings</p>
+                          </div>
+                        </div>
+                        <Badge className="bg-purple-100 text-purple-800">High Conf.</Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <CloudSnow size={16} className="text-blue-600" />
+                          <div>
+                            <p className="text-sm font-medium">Weather Correlation</p>
+                            <p className="text-xs text-muted-foreground">Rain increases cleaning by 25%</p>
+                          </div>
+                        </div>
+                        <Badge className="bg-blue-100 text-blue-800">Validated</Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="font-medium">Forecast Horizon</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Next 7 Days</span>
+                        <div className="flex items-center gap-2">
+                          <Progress value={88} className="w-16 h-2" />
+                          <span className="text-xs text-muted-foreground">88% conf.</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Next 30 Days</span>
+                        <div className="flex items-center gap-2">
+                          <Progress value={75} className="w-16 h-2" />
+                          <span className="text-xs text-muted-foreground">75% conf.</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Seasonal Outlook</span>
+                        <div className="flex items-center gap-2">
+                          <Progress value={65} className="w-16 h-2" />
+                          <span className="text-xs text-muted-foreground">65% conf.</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
