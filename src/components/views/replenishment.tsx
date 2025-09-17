@@ -36,6 +36,7 @@ import { VendorSelectionService } from '@/services/vendor-selection'
 import { ReplenishmentScheduler, DEFAULT_SCHEDULER_CONFIG, createReplenishmentScheduler } from '@/services/replenishment-scheduler'
 import { createSeasonalReplenishmentService, DEFAULT_SEASONAL_EVENTS } from '@/services/seasonal-replenishment'
 import { MLForecastingService, createMLForecastingService, ForecastResult, ExternalFactors } from '@/services/ml-forecasting'
+import { ScheduleConfig } from '@/components/replenishment/schedule-config'
 import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
 
@@ -181,6 +182,7 @@ export function Replenishment({ onViewChange }: ReplenishmentProps) {
   const [allotmentRequests, setAllotmentRequests] = useKV<AllotmentRequest[]>('allotment-requests', mockAllotmentRequests)
   const [selectedSuggestion, setSelectedSuggestion] = useState<ReplenishmentSuggestion | null>(null)
   const [isAnalysisRunning, setIsAnalysisRunning] = useState(false)
+  const [activeTab, setActiveTab] = useState('suggestions')
   type SeasonalInsights = {
     highDemandPeriods: Array<{
       product_id: string
@@ -509,23 +511,33 @@ export function Replenishment({ onViewChange }: ReplenishmentProps) {
             AI-powered supply chain optimization and inventory management
           </p>
         </div>
-        <Button 
-          onClick={runReplenishmentEngine} 
-          disabled={isAnalysisRunning}
-          className="gap-2"
-        >
-          {isAnalysisRunning ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-              Analyzing...
-            </>
-          ) : (
-            <>
-              <Play size={18} />
-              Run Analysis
-            </>
-          )}
-        </Button>
+        <div className="flex gap-3">
+          <Button 
+            variant="outline"
+            onClick={() => setActiveTab('schedules')} 
+            className="gap-2"
+          >
+            <Gear size={18} />
+            Configure Schedules
+          </Button>
+          <Button 
+            onClick={runReplenishmentEngine} 
+            disabled={isAnalysisRunning}
+            className="gap-2"
+          >
+            {isAnalysisRunning ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Play size={18} />
+                Run Analysis
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Engine Stats */}
@@ -569,20 +581,21 @@ export function Replenishment({ onViewChange }: ReplenishmentProps) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Accuracy Rate</CardTitle>
-            <TrendUp size={16} className="text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Active Schedules</CardTitle>
+            <Gear size={16} className="text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">94.2%</div>
-            <p className="text-xs text-muted-foreground">Last 30 days</p>
+            <div className="text-2xl font-bold">3</div>
+            <p className="text-xs text-muted-foreground">Automation enabled</p>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="suggestions" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
           <TabsTrigger value="forecasting">ML Forecasting</TabsTrigger>
+          <TabsTrigger value="schedules">Automation Config</TabsTrigger>
           <TabsTrigger value="allotments">Allotment Requests</TabsTrigger>
           <TabsTrigger value="rules">Replenishment Rules</TabsTrigger>
           <TabsTrigger value="analytics">Performance Analytics</TabsTrigger>
@@ -906,6 +919,76 @@ export function Replenishment({ onViewChange }: ReplenishmentProps) {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="schedules" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gear size={20} className="text-blue-600" />
+                Automated Replenishment Configuration
+              </CardTitle>
+              <CardDescription>
+                Configure schedules, confidence thresholds, and approval workflows for automated supply replenishment
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="p-4 bg-green-50 rounded-lg text-center">
+                  <CheckCircle size={24} className="mx-auto text-green-600 mb-2" />
+                  <p className="text-lg font-semibold text-green-800">3 Active</p>
+                  <p className="text-xs text-green-600">Automation Schedules</p>
+                </div>
+                <div className="p-4 bg-blue-50 rounded-lg text-center">
+                  <Target size={24} className="mx-auto text-blue-600 mb-2" />
+                  <p className="text-lg font-semibold text-blue-800">87%</p>
+                  <p className="text-xs text-blue-600">Avg Confidence</p>
+                </div>
+                <div className="p-4 bg-purple-50 rounded-lg text-center">
+                  <Brain size={24} className="mx-auto text-purple-600 mb-2" />
+                  <p className="text-lg font-semibold text-purple-800">64%</p>
+                  <p className="text-xs text-purple-600">Auto-Approval Rate</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <div>
+                      <p className="font-medium">Daily Critical Items Monitor</p>
+                      <p className="text-sm text-muted-foreground">Auto-approve confidence ≥90% • Next run: 6:00 AM tomorrow</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-green-100 text-green-800">Active</Badge>
+                </div>
+                
+                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <div>
+                      <p className="font-medium">Weekly Cost Optimization Review</p>
+                      <p className="text-sm text-muted-foreground">Auto-approve confidence ≥80% • Next run: Monday 5:00 AM</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-blue-100 text-blue-800">Active</Badge>
+                </div>
+                
+                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                    <div>
+                      <p className="font-medium">Monthly Seasonal Planning</p>
+                      <p className="text-sm text-muted-foreground">Manual review required • Next run: 1st of month 4:00 AM</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-purple-100 text-purple-800">Active</Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <ScheduleConfig />
         </TabsContent>
 
         <TabsContent value="suggestions" className="space-y-6">

@@ -63,6 +63,11 @@
 - **Why it matters**: Prevents stockouts during seasonal demand fluctuations while optimizing inventory costs through predictive analytics
 - **Success criteria**: Reduces manual replenishment decisions by 80%, maintains optimal inventory levels through seasonal variations
 
+### Automated Schedule Configuration
+- **What it does**: Provides comprehensive configuration management for automated replenishment schedules with confidence thresholds, approval workflows, and ML parameters
+- **Why it matters**: Enables fine-tuned automation control, allowing different confidence levels and approval rules for different types of replenishment needs
+- **Success criteria**: Support for daily/weekly/monthly schedules, configurable auto-approval thresholds (target 64% auto-approval rate), and comprehensive execution logging
+
 ### Dashboard & Analytics
 - **What it does**: Role-specific dashboards showing pending actions, order metrics, ML forecast insights, and performance indicators
 - **Why it matters**: Enables proactive management and quick decision-making with data-driven insights
