@@ -7,6 +7,7 @@ import { Eye, Package } from '@phosphor-icons/react'
 import { useAuth } from '../auth-provider'
 import { mockOrders, mockProducts, mockStores } from '@/lib/mock-data'
 import { Order } from '@/lib/types'
+import { useKV } from '@github/spark/hooks'
 
 interface OrdersProps {
   onViewChange: (view: string) => void
@@ -14,10 +15,14 @@ interface OrdersProps {
 
 export function Orders({ onViewChange }: OrdersProps) {
   const { user } = useAuth()
+  const [userOrders] = useKV<Order[]>('user-orders', [])
 
   if (!user) return null
 
-  const userOrders = mockOrders.filter(order => {
+  // Combine mock orders with user-created orders
+  const allOrders = [...mockOrders, ...(userOrders || [])]
+  
+  const filteredOrders = allOrders.filter(order => {
     if (user.role === 'SM') {
       return order.store_id === user.assignment.id
     }
@@ -176,7 +181,7 @@ export function Orders({ onViewChange }: OrdersProps) {
 
       {/* Orders List */}
       <div className="space-y-4">
-        {userOrders.map((order) => (
+        {filteredOrders.map((order) => (
           <Card key={order.order_id}>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -229,7 +234,7 @@ export function Orders({ onViewChange }: OrdersProps) {
         ))}
       </div>
 
-      {userOrders.length === 0 && (
+      {filteredOrders.length === 0 && (
         <div className="text-center py-12">
           <Package size={48} className="mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium mb-2">No orders found</h3>

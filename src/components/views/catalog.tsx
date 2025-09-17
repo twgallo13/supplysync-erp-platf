@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { MagnifyingGlass, ShoppingCart, Warning, Plus, Minus } from '@phosphor-icons/react'
 import { mockProducts } from '@/lib/mock-data'
-import { Product, CartItem } from '@/lib/types'
+import { Product, CartItem, Order, LineItem } from '@/lib/types'
 import { useKV } from '@github/spark/hooks'
+import { useAuth } from '../auth-provider'
 import { toast } from 'sonner'
 
 interface CatalogProps {
@@ -19,6 +20,8 @@ export function Catalog({ onViewChange }: CatalogProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [cart, setCart] = useKV<CartItem[]>('shopping-cart', [])
+  const { user } = useAuth()
+  const [orders, setOrders] = useKV<Order[]>('user-orders', [])
 
   const categories = ['all', ...Array.from(new Set(mockProducts.map(p => p.category)))]
   
@@ -77,6 +80,66 @@ export function Catalog({ onViewChange }: CatalogProps) {
   const cartTotal = (cart || []).reduce((sum, item) => 
     sum + (item.selected_vendor.cost_per_item * item.quantity), 0
   )
+
+  const submitOrder = () => {
+    if (!user || !cart || cart.length === 0) {
+      toast.error('Cannot submit empty order')
+      return
+    }
+
+    // Check if any items require DM approval to determine workflow
+    const requiresApproval = cart.some(item => item.product.requires_dm_approval)
+    
+    // Convert cart items to line items
+    const lineItems: LineItem[] = cart.map(item => ({
+      product_id: item.product.product_id,
+      vendor_id: item.selected_vendor.vendor_id,
+      quantity: item.quantity,
+      unit_cost: item.selected_vendor.cost_per_item
+    }))
+
+    // Create new order
+    const newOrder: Order = {
+      order_id: `ord_${Date.now()}`,
+      store_id: user.assignment.id,
+      created_by_user_id: user.user_id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      status: requiresApproval ? 'PENDING_DM_APPROVAL' : 'PENDING_FM_APPROVAL',
+      order_type: 'STORE_INITIATED',
+      line_items: lineItems,
+      shipping_details: {
+        method: 'WAREHOUSE_SHIPMENT',
+        address: {
+          street: '123 Main Street',
+          city: 'Metropolitan City',
+          state: 'CA',
+          zip: '90210'
+        },
+        tracking_numbers: []
+      },
+      total_cost: cartTotal,
+      audit_history: [{
+        timestamp: new Date().toISOString(),
+        user_id: user.user_id,
+        action: 'ORDER_CREATED',
+        details: `Order submitted by ${user.role} - Total: $${cartTotal.toFixed(2)}`
+      }]
+    }
+
+    // Save the order
+    setOrders(currentOrders => [...(currentOrders || []), newOrder])
+    
+    // Clear the cart
+    setCart([])
+    
+    // Show success message
+    const statusText = requiresApproval ? 'submitted for District Manager approval' : 'submitted for Facility Manager approval'
+    toast.success(`Order #${newOrder.order_id.slice(-8)} ${statusText}!`)
+    
+    // Navigate to orders page
+    onViewChange('orders')
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -146,11 +209,7 @@ export function Catalog({ onViewChange }: CatalogProps) {
                     <Button variant="outline" onClick={() => setCart([])}>
                       Clear Cart
                     </Button>
-                    <Button onClick={() => {
-                      toast.success('Order submitted for approval!')
-                      setCart([])
-                      onViewChange('orders')
-                    }}>
+                    <Button onClick={() => submitOrder()}>
                       Submit Order
                     </Button>
                   </div>

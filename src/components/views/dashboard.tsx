@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import { ShoppingCart, ClipboardText, Package, TrendUp } from '@phosphor-icons/react'
 import { useAuth } from '../auth-provider'
 import { mockOrders } from '@/lib/mock-data'
+import { useKV } from '@github/spark/hooks'
+import { Order } from '@/lib/types'
 
 interface DashboardProps {
   onViewChange: (view: string) => void
@@ -11,17 +13,21 @@ interface DashboardProps {
 
 export function Dashboard({ onViewChange }: DashboardProps) {
   const { user } = useAuth()
+  const [userOrders] = useKV<Order[]>('user-orders', [])
 
   if (!user) return null
 
-  const userOrders = mockOrders.filter(order => {
+  // Combine mock orders with user-created orders
+  const allOrders = [...mockOrders, ...(userOrders || [])]
+  
+  const filteredOrders = allOrders.filter(order => {
     if (user.role === 'SM') {
       return order.store_id === user.assignment.id
     }
     return true
   })
 
-  const pendingApprovals = mockOrders.filter(order => {
+  const pendingApprovals = allOrders.filter(order => {
     if (user.role === 'DM') {
       return order.status === 'PENDING_DM_APPROVAL'
     }
@@ -31,8 +37,8 @@ export function Dashboard({ onViewChange }: DashboardProps) {
     return false
   }).length
 
-  const recentOrders = userOrders.slice(0, 3)
-  const totalValue = userOrders.reduce((sum, order) => sum + order.total_cost, 0)
+  const recentOrders = filteredOrders.slice(0, 3)
+  const totalValue = filteredOrders.reduce((sum, order) => sum + order.total_cost, 0)
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -67,7 +73,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
             <ShoppingCart size={16} className="text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{userOrders.length}</div>
+            <div className="text-2xl font-bold">{filteredOrders.length}</div>
             <p className="text-xs text-muted-foreground">
               This month
             </p>

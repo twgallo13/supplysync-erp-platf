@@ -10,6 +10,7 @@ import { CheckCircle, XCircle, Clock, Eye } from '@phosphor-icons/react'
 import { useAuth } from '../auth-provider'
 import { mockOrders, mockProducts, mockStores } from '@/lib/mock-data'
 import { Order } from '@/lib/types'
+import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
 
 const rejectionReasons = {
@@ -41,6 +42,7 @@ export function Approvals({ onViewChange }: ApprovalsProps) {
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
   const [comments, setComments] = useState('')
+  const [userOrders, setUserOrders] = useKV<Order[]>('user-orders', [])
 
   if (!user || (user.role !== 'DM' && user.role !== 'FM')) {
     return (
@@ -51,7 +53,10 @@ export function Approvals({ onViewChange }: ApprovalsProps) {
     )
   }
 
-  const pendingOrders = mockOrders.filter(order => {
+  // Combine mock orders with user-created orders
+  const allOrders = [...mockOrders, ...(userOrders || [])]
+  
+  const pendingOrders = allOrders.filter(order => {
     if (user.role === 'DM') {
       return order.status === 'PENDING_DM_APPROVAL'
     }
@@ -74,12 +79,67 @@ export function Approvals({ onViewChange }: ApprovalsProps) {
   const handleApproval = (order: Order, approved: boolean) => {
     if (approved) {
       const nextStatus = user.role === 'DM' ? 'PENDING_FM_APPROVAL' : 'APPROVED_FOR_FULFILLMENT'
+      
+      // Update the order status
+      const updatedOrder = {
+        ...order,
+        status: nextStatus as Order['status'],
+        updated_at: new Date().toISOString(),
+        audit_history: [
+          ...order.audit_history,
+          {
+            timestamp: new Date().toISOString(),
+            user_id: user.user_id,
+            action: user.role === 'DM' ? 'DM_APPROVED' : 'FM_APPROVED',
+            details: `Approved by ${user.role}${comments ? `: ${comments}` : ''}`
+          }
+        ]
+      }
+      
+      // Find and update the order in userOrders if it exists there
+      const userOrderIndex = (userOrders || []).findIndex(o => o.order_id === order.order_id)
+      if (userOrderIndex !== -1) {
+        setUserOrders(currentOrders => {
+          const updated = [...(currentOrders || [])]
+          updated[userOrderIndex] = updatedOrder
+          return updated
+        })
+      }
+      
       toast.success(`Order #${order.order_id.slice(-6)} approved and forwarded to ${user.role === 'DM' ? 'Facility Manager' : 'fulfillment'}`)
     } else {
       if (!rejectionReason) {
         toast.error('Please select a reason for rejection')
         return
       }
+      
+      // Update the order status to rejected
+      const updatedOrder = {
+        ...order,
+        status: 'REJECTED' as Order['status'],
+        updated_at: new Date().toISOString(),
+        audit_history: [
+          ...order.audit_history,
+          {
+            timestamp: new Date().toISOString(),
+            user_id: user.user_id,
+            action: user.role === 'DM' ? 'DM_REJECTED' : 'FM_REJECTED',
+            reason_code: rejectionReason,
+            details: `Rejected by ${user.role}: ${rejectionReason}${comments ? ` - ${comments}` : ''}`
+          }
+        ]
+      }
+      
+      // Find and update the order in userOrders if it exists there
+      const userOrderIndex = (userOrders || []).findIndex(o => o.order_id === order.order_id)
+      if (userOrderIndex !== -1) {
+        setUserOrders(currentOrders => {
+          const updated = [...(currentOrders || [])]
+          updated[userOrderIndex] = updatedOrder
+          return updated
+        })
+      }
+      
       toast.success(`Order #${order.order_id.slice(-6)} rejected`)
     }
     

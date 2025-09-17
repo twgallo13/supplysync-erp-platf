@@ -6,6 +6,7 @@ import {
   ShoppingCart, 
   ClipboardText, 
   CheckCircle, 
+  Scan,
   ChartLine,
   Gear,
   IconProps
@@ -53,6 +54,12 @@ const navItems: NavItem[] = [
     label: 'Fulfillment',
     key: 'fulfillment',
     roles: ['FM']
+  },
+  {
+    icon: Scan,
+    label: 'Receiving',
+    key: 'receiving',
+    roles: ['SM', 'FM']
   },
   {
     icon: ChartLine,

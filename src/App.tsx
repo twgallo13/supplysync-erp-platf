@@ -9,6 +9,7 @@ import { Catalog } from './components/views/catalog'
 import { Orders } from './components/views/orders'
 import { Approvals } from './components/views/approvals'
 import { Fulfillment } from './components/views/fulfillment'
+import { Receiving } from './components/views/receiving'
 import { Analytics } from './components/views/analytics'
 import { Settings } from './components/views/settings'
 
@@ -43,6 +44,8 @@ function AppContent() {
         return <Approvals onViewChange={setActiveView} />
       case 'fulfillment':
         return <Fulfillment onViewChange={setActiveView} />
+      case 'receiving':
+        return <Receiving onViewChange={setActiveView} />
       case 'analytics':
         return <Analytics onViewChange={setActiveView} />
       case 'settings':
