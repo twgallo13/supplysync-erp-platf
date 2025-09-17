@@ -2,6 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 import { 
   ChartLine, 
   TrendUp, 
@@ -11,7 +13,18 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Warning
+  Warning,
+  Brain,
+  Lightning,
+  Target,
+  Calendar,
+  ArrowUp,
+  ArrowDown,
+  Equals,
+  Snowflake,
+  Sun,
+  Leaf,
+  Flower
 } from '@phosphor-icons/react'
 import { useAuth } from '../auth-provider'
 import { mockOrders, mockProducts, mockStores } from '@/lib/mock-data'
@@ -62,6 +75,144 @@ export function Analytics({ onViewChange }: AnalyticsProps) {
     { category: 'Health & Safety', orders: 15, spend: 194.85, trend: '+18%' }
   ]
 
+  // Predictive Analytics Data
+  const forecastAccuracy = [
+    { 
+      category: 'Office Supplies', 
+      accuracy: 87.3, 
+      lastMonth: 84.1, 
+      trend: 'up',
+      variance: 12.7,
+      demandPattern: 'stable',
+      confidence: 'high'
+    },
+    { 
+      category: 'Cleaning Supplies', 
+      accuracy: 91.2, 
+      lastMonth: 89.8, 
+      trend: 'up',
+      variance: 8.8,
+      demandPattern: 'seasonal',
+      confidence: 'high'
+    },
+    { 
+      category: 'POS Supplies', 
+      accuracy: 78.9, 
+      lastMonth: 82.3, 
+      trend: 'down',
+      variance: 21.1,
+      demandPattern: 'volatile',
+      confidence: 'medium'
+    },
+    { 
+      category: 'Store Supplies', 
+      accuracy: 93.5, 
+      lastMonth: 91.2, 
+      trend: 'up',
+      variance: 6.5,
+      demandPattern: 'predictable',
+      confidence: 'high'
+    },
+    { 
+      category: 'Health & Safety', 
+      accuracy: 85.7, 
+      lastMonth: 87.9, 
+      trend: 'down',
+      variance: 14.3,
+      demandPattern: 'event-driven',
+      confidence: 'medium'
+    }
+  ]
+
+  const seasonalTrends = [
+    {
+      season: 'Winter (Q1)',
+      icon: <Snowflake size={20} className="text-blue-500" />,
+      categories: [
+        { name: 'Cleaning Supplies', demand: '+35%', reason: 'Cold/flu season cleaning' },
+        { name: 'Health & Safety', demand: '+28%', reason: 'Hand sanitizer, masks' },
+        { name: 'Office Supplies', demand: '-12%', reason: 'Post-holiday lull' }
+      ],
+      overallDemand: '+18%'
+    },
+    {
+      season: 'Spring (Q2)',
+      icon: <Flower size={20} className="text-pink-500" />,
+      categories: [
+        { name: 'Cleaning Supplies', demand: '+45%', reason: 'Spring cleaning surge' },
+        { name: 'Store Supplies', demand: '+22%', reason: 'Display refresh' },
+        { name: 'POS Supplies', demand: '+8%', reason: 'Easter promotions' }
+      ],
+      overallDemand: '+25%'
+    },
+    {
+      season: 'Summer (Q3)',
+      icon: <Sun size={20} className="text-yellow-500" />,
+      categories: [
+        { name: 'Cleaning Supplies', demand: '+15%', reason: 'AC filter changes' },
+        { name: 'Store Supplies', demand: '+32%', reason: 'Summer displays' },
+        { name: 'Health & Safety', demand: '-18%', reason: 'Reduced illness' }
+      ],
+      overallDemand: '+10%'
+    },
+    {
+      season: 'Fall (Q4)',
+      icon: <Leaf size={20} className="text-orange-500" />,
+      categories: [
+        { name: 'Office Supplies', demand: '+28%', reason: 'Back-to-school, holidays' },
+        { name: 'POS Supplies', demand: '+41%', reason: 'Holiday promotions' },
+        { name: 'Store Supplies', demand: '+38%', reason: 'Holiday decorations' }
+      ],
+      overallDemand: '+35%'
+    }
+  ]
+
+  const mlInsights = [
+    {
+      type: 'optimization',
+      title: 'Vendor Switch Opportunity',
+      description: 'ML model suggests switching glass cleaner supplier could save 18% annually',
+      impact: '$2,847 savings',
+      confidence: 94,
+      action: 'Review vendor contracts'
+    },
+    {
+      type: 'alert',
+      title: 'Unusual Demand Pattern',
+      description: 'Receipt paper usage 34% above forecast in District 12',
+      impact: 'Potential stockout risk',
+      confidence: 87,
+      action: 'Investigate store activity'
+    },
+    {
+      type: 'seasonal',
+      title: 'Early Spring Surge Detected',
+      description: 'Cleaning supplies demand rising 2 weeks ahead of typical pattern',
+      impact: '+15% demand shift',
+      confidence: 91,
+      action: 'Accelerate replenishment'
+    },
+    {
+      type: 'efficiency',
+      title: 'Bundle Optimization',
+      description: 'New store bundles could reduce shipping costs by 23%',
+      impact: '$1,234 monthly savings',
+      confidence: 89,
+      action: 'Create optimized bundles'
+    }
+  ]
+
+  const demandForecast = [
+    { week: 'Week 1', predicted: 245, actual: 238, accuracy: 97.1 },
+    { week: 'Week 2', predicted: 267, actual: 259, accuracy: 97.0 },
+    { week: 'Week 3', predicted: 198, actual: 203, accuracy: 97.5 },
+    { week: 'Week 4', predicted: 289, actual: 276, accuracy: 95.5 },
+    { week: 'Week 5', predicted: 234, actual: null, accuracy: null },
+    { week: 'Week 6', predicted: 256, actual: null, accuracy: null },
+    { week: 'Week 7', predicted: 278, actual: null, accuracy: null },
+    { week: 'Week 8', predicted: 301, actual: null, accuracy: null }
+  ]
+
   const getPerformanceColor = (rating: string) => {
     switch (rating) {
       case 'Excellent': return 'bg-green-100 text-green-800'
@@ -77,6 +228,42 @@ export function Analytics({ onViewChange }: AnalyticsProps) {
 
   const getTrendIcon = (trend: string) => {
     return trend.startsWith('+') ? <TrendUp size={14} /> : <TrendDown size={14} />
+  }
+
+  const getAccuracyColor = (accuracy: number) => {
+    if (accuracy >= 90) return 'text-green-600'
+    if (accuracy >= 80) return 'text-yellow-600'
+    return 'text-red-600'
+  }
+
+  const getConfidenceColor = (confidence: string) => {
+    switch (confidence) {
+      case 'high': return 'bg-green-100 text-green-800'
+      case 'medium': return 'bg-yellow-100 text-yellow-800'
+      case 'low': return 'bg-red-100 text-red-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getDemandPatternIcon = (pattern: string) => {
+    switch (pattern) {
+      case 'stable': return <Equals size={14} className="text-blue-600" />
+      case 'seasonal': return <Calendar size={14} className="text-green-600" />
+      case 'volatile': return <Lightning size={14} className="text-red-600" />
+      case 'predictable': return <Target size={14} className="text-purple-600" />
+      case 'event-driven': return <Warning size={14} className="text-orange-600" />
+      default: return <ChartLine size={14} />
+    }
+  }
+
+  const getInsightIcon = (type: string) => {
+    switch (type) {
+      case 'optimization': return <Target size={16} className="text-blue-600" />
+      case 'alert': return <Warning size={16} className="text-red-600" />
+      case 'seasonal': return <Calendar size={16} className="text-green-600" />
+      case 'efficiency': return <Lightning size={16} className="text-purple-600" />
+      default: return <Brain size={16} />
+    }
   }
 
   return (
@@ -163,6 +350,8 @@ export function Analytics({ onViewChange }: AnalyticsProps) {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="predictive">Predictive Analytics</TabsTrigger>
+          <TabsTrigger value="seasonal">Seasonal Trends</TabsTrigger>
           <TabsTrigger value="vendors">Vendor Performance</TabsTrigger>
           <TabsTrigger value="categories">Category Analysis</TabsTrigger>
           <TabsTrigger value="compliance">Compliance</TabsTrigger>
@@ -263,6 +452,226 @@ export function Analytics({ onViewChange }: AnalyticsProps) {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="predictive" className="space-y-6">
+          {/* Forecast Accuracy Dashboard */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain size={20} className="text-blue-600" />
+                  Forecast Accuracy by Category
+                </CardTitle>
+                <CardDescription>ML-driven demand prediction performance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {forecastAccuracy.map((item, index) => (
+                    <div key={index} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{item.category}</span>
+                          {getDemandPatternIcon(item.demandPattern)}
+                          <Badge variant="outline" className={getConfidenceColor(item.confidence)}>
+                            {item.confidence}
+                          </Badge>
+                        </div>
+                        <div className={`flex items-center gap-1 ${getAccuracyColor(item.accuracy)}`}>
+                          {item.trend === 'up' ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
+                          <span className="font-semibold">{item.accuracy}%</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <span>Variance: ±{item.variance}%</span>
+                        <span>Last month: {item.lastMonth}%</span>
+                      </div>
+                      <Progress value={item.accuracy} className="mt-2" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lightning size={20} className="text-purple-600" />
+                  ML Insights & Recommendations
+                </CardTitle>
+                <CardDescription>AI-powered optimization opportunities</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {mlInsights.map((insight, index) => (
+                    <div key={index} className="p-4 border rounded-lg">
+                      <div className="flex items-start gap-3">
+                        {getInsightIcon(insight.type)}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="font-medium">{insight.title}</h4>
+                            <Badge variant="outline">
+                              {insight.confidence}% confidence
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {insight.description}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-green-600">
+                              {insight.impact}
+                            </span>
+                            <Button variant="outline" size="sm">
+                              {insight.action}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Demand Forecast Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ChartLine size={20} className="text-green-600" />
+                8-Week Demand Forecast
+              </CardTitle>
+              <CardDescription>Predicted vs actual demand with accuracy metrics</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Chart visualization (simplified bars) */}
+                <div className="grid grid-cols-8 gap-2">
+                  {demandForecast.map((week, index) => (
+                    <div key={index} className="text-center">
+                      <div className="h-32 bg-muted rounded flex flex-col justify-end p-1 mb-2">
+                        <div 
+                          className="bg-blue-500 rounded-sm mb-1 min-h-1" 
+                          style={{ height: `${(week.predicted / 350) * 100}%` }}
+                        />
+                        {week.actual && (
+                          <div 
+                            className="bg-green-500 rounded-sm min-h-1" 
+                            style={{ height: `${(week.actual / 350) * 80}%` }}
+                          />
+                        )}
+                      </div>
+                      <p className="text-xs font-medium">{week.week}</p>
+                      <p className="text-xs text-blue-600">P: {week.predicted}</p>
+                      {week.actual && (
+                        <>
+                          <p className="text-xs text-green-600">A: {week.actual}</p>
+                          <p className="text-xs text-muted-foreground">{week.accuracy?.toFixed(1)}%</p>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex items-center justify-center gap-6 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-sm" />
+                    <span className="text-sm">Predicted</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-sm" />
+                    <span className="text-sm">Actual</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="seasonal" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar size={20} className="text-orange-600" />
+                Seasonal Demand Patterns
+              </CardTitle>
+              <CardDescription>Historical trends and seasonal variations by quarter</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {seasonalTrends.map((season, index) => (
+                  <div key={index} className="p-6 border rounded-lg">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        {season.icon}
+                        <h3 className="font-semibold">{season.season}</h3>
+                      </div>
+                      <Badge variant="outline" className="font-semibold">
+                        {season.overallDemand} overall
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {season.categories.map((category, catIndex) => (
+                        <div key={catIndex} className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-sm">{category.name}</p>
+                            <p className="text-xs text-muted-foreground">{category.reason}</p>
+                          </div>
+                          <div className={`text-sm font-semibold ${
+                            category.demand.startsWith('+') ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {category.demand}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Seasonal Planning Recommendations */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Seasonal Planning Recommendations</CardTitle>
+              <CardDescription>AI-suggested adjustments for upcoming seasonal patterns</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target size={16} className="text-blue-600" />
+                    <span className="font-medium text-blue-800">Next Month</span>
+                  </div>
+                  <p className="text-sm text-blue-700">
+                    Increase cleaning supplies inventory by 25% for spring cleaning surge
+                  </p>
+                </div>
+                
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle size={16} className="text-green-600" />
+                    <span className="font-medium text-green-800">Q2 Prep</span>
+                  </div>
+                  <p className="text-sm text-green-700">
+                    Schedule extra POS supplies delivery before Easter promotion period
+                  </p>
+                </div>
+                
+                <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lightning size={16} className="text-purple-600" />
+                    <span className="font-medium text-purple-800">Holiday Prep</span>
+                  </div>
+                  <p className="text-sm text-purple-700">
+                    Early Q4 office supplies build-up recommended for back-to-school rush
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="vendors" className="space-y-6">
