@@ -8,6 +8,7 @@ import { MobileScanner } from './mobile-scanner'
 import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { haptics } from '@/lib/haptics'
 
 interface ReceivedItem {
   id: string
@@ -56,8 +57,10 @@ export function MobileReceiving() {
     const item = pendingItems.find(item => item.sku === barcode)
     if (item) {
       setSelectedItem(item.id)
+      haptics.scanSuccess() // Success haptic for found item
       toast.success(`Found: ${item.name}`)
     } else {
+      haptics.scanError() // Error haptic for unknown item
       toast.error(`Item not found: ${barcode}`)
     }
   }
@@ -74,6 +77,13 @@ export function MobileReceiving() {
     item.receivedQty = newQty
     item.status = newStatus
     
+    // Haptic feedback based on action
+    if (change > 0) {
+      haptics.light() // Light haptic for increment
+    } else if (change < 0) {
+      haptics.medium() // Medium haptic for decrement
+    }
+    
     toast.success(`Updated ${item.name}: ${newQty} received`)
   }
 
@@ -84,6 +94,7 @@ export function MobileReceiving() {
     item.receivedQty = item.expectedQty
     item.status = 'complete'
     
+    haptics.success() // Success haptic for completing item
     toast.success(`Fully received: ${item.name}`)
   }
 
@@ -94,6 +105,7 @@ export function MobileReceiving() {
     item.status = 'exception'
     item.notes = 'Flagged for review'
     
+    haptics.error() // Error haptic for exception
     toast.error(`Exception flagged: ${item.name}`)
   }
 
@@ -115,7 +127,10 @@ export function MobileReceiving() {
       {/* Scan Button */}
       <Card className="p-4">
         <Button
-          onClick={() => setScannerOpen(true)}
+          onClick={() => {
+            haptics.light() // Light haptic when opening scanner
+            setScannerOpen(true)
+          }}
           className="w-full h-16 text-lg font-semibold rounded-xl"
           size="lg"
         >
@@ -241,6 +256,13 @@ export function MobileReceiving() {
         <Button
           className="w-full h-12 text-lg font-semibold"
           disabled={pendingItems.some(i => i.status === 'pending' || i.status === 'exception')}
+          onClick={() => {
+            const isComplete = !pendingItems.some(i => i.status === 'pending' || i.status === 'exception')
+            if (isComplete) {
+              haptics.success() // Success haptic for completing receiving
+              toast.success('Receiving completed successfully!')
+            }
+          }}
         >
           <Package size={20} className="mr-2" />
           Complete Receiving

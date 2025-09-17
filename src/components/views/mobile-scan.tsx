@@ -7,6 +7,7 @@ import { MobileScanner } from '../mobile/mobile-scanner'
 import { MobileLayout } from '../layout/mobile-layout'
 import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
+import { haptics } from '@/lib/haptics'
 
 interface ScanHistoryItem {
   id: string
@@ -35,6 +36,9 @@ export function MobileScan({ onViewChange }: MobileScanProps) {
   const handleScan = (barcode: string) => {
     const productName = productDatabase[barcode] || 'Unknown Product'
     
+    // Determine if this is a known or unknown product
+    const isKnownProduct = productDatabase[barcode] !== undefined
+    
     const newScanItem: ScanHistoryItem = {
       id: Date.now().toString(),
       barcode,
@@ -45,11 +49,20 @@ export function MobileScan({ onViewChange }: MobileScanProps) {
 
     setScanHistory(currentHistory => [newScanItem, ...(currentHistory || []).slice(0, 9)])
     
-    toast.success(`Scanned: ${productName}`)
+    if (isKnownProduct) {
+      haptics.scanSuccess() // Success haptic for known product
+      toast.success(`Scanned: ${productName}`)
+    } else {
+      haptics.warning() // Warning haptic for unknown product
+      toast.warning(`Unknown product scanned: ${barcode}`, {
+        description: 'Product not found in catalog'
+      })
+    }
   }
 
   const clearHistory = () => {
     setScanHistory([])
+    haptics.medium() // Medium haptic for clearing action
     toast.success('Scan history cleared')
   }
 
@@ -58,7 +71,10 @@ export function MobileScan({ onViewChange }: MobileScanProps) {
       id: 'receive',
       label: 'Go to Receiving',
       icon: Package,
-      onClick: () => onViewChange?.('receiving')
+      onClick: () => {
+        haptics.select() // Light haptic for navigation
+        onViewChange?.('receiving')
+      }
     },
     {
       id: 'manual',
@@ -69,6 +85,8 @@ export function MobileScan({ onViewChange }: MobileScanProps) {
         const barcode = prompt('Enter barcode:')
         if (barcode?.trim()) {
           handleScan(barcode.trim())
+        } else if (barcode === '') {
+          haptics.warning() // Warning haptic for empty input
         }
       }
     }
@@ -90,7 +108,10 @@ export function MobileScan({ onViewChange }: MobileScanProps) {
               </p>
             </div>
             <Button
-              onClick={() => setScannerOpen(true)}
+              onClick={() => {
+                haptics.light() // Light haptic when opening scanner
+                setScannerOpen(true)
+              }}
               className="w-full h-16 text-xl font-semibold rounded-xl"
               size="lg"
             >
