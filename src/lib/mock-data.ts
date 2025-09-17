@@ -21,6 +21,20 @@ export const mockUsers: User[] = [
     email: 'jennifer.walsh@retailcorp.com',
     role: 'FM',
     assignment: { type: 'district', id: 'd_67890' }
+  },
+  {
+    user_id: 'usr_ca_001',
+    full_name: 'David Kim',
+    email: 'david.kim@retailcorp.com',
+    role: 'COST_ANALYST',
+    assignment: { type: 'district', id: 'd_67890' }
+  },
+  {
+    user_id: 'usr_admin_001',
+    full_name: 'Alex Thompson',
+    email: 'alex.thompson@retailcorp.com',
+    role: 'ADMIN',
+    assignment: { type: 'district', id: 'd_67890' }
   }
 ]
 

@@ -29,6 +29,12 @@ const roleInfo = {
     description: 'Monitor financial performance and vendor SLAs',
     icon: ChartBar,
     color: 'bg-orange-100 text-orange-800' as const
+  },
+  ADMIN: {
+    title: 'Administrator',
+    description: 'System configuration and user management',
+    icon: Shield,
+    color: 'bg-red-100 text-red-800' as const
   }
 }
 
@@ -44,7 +50,7 @@ export function LoginScreen() {
           <Badge variant="secondary" className="mt-2">Demo Environment</Badge>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Object.entries(roleInfo).map(([role, info]) => {
             const Icon = info.icon
             return (

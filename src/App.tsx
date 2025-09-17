@@ -8,6 +8,9 @@ import { Dashboard } from './components/views/dashboard'
 import { Catalog } from './components/views/catalog'
 import { Orders } from './components/views/orders'
 import { Approvals } from './components/views/approvals'
+import { Fulfillment } from './components/views/fulfillment'
+import { Analytics } from './components/views/analytics'
+import { Settings } from './components/views/settings'
 
 function AppContent() {
   const { user, isLoading } = useAuth()
@@ -38,6 +41,12 @@ function AppContent() {
         return <Orders onViewChange={setActiveView} />
       case 'approvals':
         return <Approvals onViewChange={setActiveView} />
+      case 'fulfillment':
+        return <Fulfillment onViewChange={setActiveView} />
+      case 'analytics':
+        return <Analytics onViewChange={setActiveView} />
+      case 'settings':
+        return <Settings onViewChange={setActiveView} />
       default:
         return <Dashboard onViewChange={setActiveView} />
     }
