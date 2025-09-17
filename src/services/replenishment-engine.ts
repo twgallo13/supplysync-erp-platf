@@ -4,6 +4,7 @@
  */
 
 import { Product, Store, Vendor, ReplenishmentRequest, LineItem } from '@/types'
+import { MLForecastingService, createMLForecastingService, ExternalFactors } from './ml-forecasting'
 
 // Configuration for replenishment calculations
 export interface ReplenishmentConfig {
@@ -51,12 +52,15 @@ export interface NeedGroup {
 
 /**
  * Core replenishment engine implementing the specification's formulas and logic
+ * Enhanced with ML-based seasonal demand forecasting
  */
 export class ReplenishmentEngine {
   private config: ReplenishmentConfig
+  private mlForecasting: MLForecastingService
   
   constructor(config: ReplenishmentConfig) {
     this.config = config
+    this.mlForecasting = createMLForecastingService()
   }
 
   /**
@@ -93,7 +97,57 @@ export class ReplenishmentEngine {
   }
 
   /**
-   * Forecast daily usage based on historical data with seasonality
+   * Enhanced forecast daily usage using ML-based seasonal forecasting
+   */
+  private async forecastDailyUsageML(
+    productId: string,
+    storeId: string,
+    usageHistory: UsageHistory[],
+    externalFactors?: ExternalFactors,
+    currentDate: Date = new Date()
+  ): Promise<{ averageDaily: number; variability: number; confidence: number; seasonalityFactor: number }> {
+    if (usageHistory.length === 0) {
+      return { averageDaily: 0, variability: 0, confidence: 0, seasonalityFactor: 1.0 }
+    }
+
+    try {
+      // Use ML forecasting service for sophisticated demand prediction
+      const mlForecast = await this.mlForecasting.generateForecast(
+        productId,
+        storeId,
+        usageHistory,
+        externalFactors
+      )
+
+      // Calculate variability from confidence interval
+      const prediction = mlForecast.prediction.next7Days
+      const confidenceInterval = mlForecast.prediction.confidenceInterval
+      const avgPrediction = prediction.reduce((sum, val) => sum + val, 0) / prediction.length
+      const avgLower = confidenceInterval.lower.reduce((sum, val) => sum + val, 0) / confidenceInterval.lower.length
+      const avgUpper = confidenceInterval.upper.reduce((sum, val) => sum + val, 0) / confidenceInterval.upper.length
+      
+      const variability = avgPrediction > 0 ? (avgUpper - avgLower) / (2 * avgPrediction) : 0
+
+      return {
+        averageDaily: mlForecast.forecastedDailyUsage,
+        variability,
+        confidence: mlForecast.confidence,
+        seasonalityFactor: mlForecast.seasonalityFactor
+      }
+    } catch (error) {
+      console.warn(`ML forecasting failed for product ${productId} in store ${storeId}, falling back to simple method:`, error)
+      // Fallback to original simple forecasting method
+      const simpleForecast = this.forecastDailyUsage(usageHistory, currentDate)
+      return {
+        ...simpleForecast,
+        confidence: 0.5,
+        seasonalityFactor: 1.0
+      }
+    }
+  }
+
+  /**
+   * Original forecast daily usage based on historical data with seasonality (fallback method)
    */
   private forecastDailyUsage(
     usageHistory: UsageHistory[],
@@ -159,12 +213,14 @@ export class ReplenishmentEngine {
 
   /**
    * Generate replenishment suggestions for products below reorder point
+   * Enhanced with ML-based demand forecasting
    */
   async generateReplenishmentRequests(
     store: Store,
     products: Product[],
     inventoryLevels: InventoryLevel[],
-    usageHistory: UsageHistory[]
+    usageHistory: UsageHistory[],
+    externalFactors?: ExternalFactors
   ): Promise<ReplenishmentRequest[]> {
     const requests: ReplenishmentRequest[] = []
 
@@ -181,11 +237,17 @@ export class ReplenishmentEngine {
         h => h.product_id === product.product_id && h.store_id === store.store_id
       )
 
-      const { averageDaily, variability } = this.forecastDailyUsage(productUsageHistory)
+      // Use ML forecasting for better demand prediction
+      const forecast = await this.forecastDailyUsageML(
+        product.product_id,
+        store.store_id,
+        productUsageHistory,
+        externalFactors
+      )
       
-      if (averageDaily === 0) continue // No usage history, skip
+      if (forecast.averageDaily === 0) continue // No usage history, skip
 
-      const safetyStock = this.calculateSafetyStock(averageDaily, variability)
+      const safetyStock = this.calculateSafetyStock(forecast.averageDaily, forecast.variability)
       const daysOfCover = this.getDaysOfCoverTarget(store, product)
       
       // Get the best vendor for lead time calculation
@@ -193,7 +255,7 @@ export class ReplenishmentEngine {
       if (!bestVendor) continue
 
       const reorderPoint = this.calculateReorderPoint(
-        averageDaily,
+        forecast.averageDaily,
         bestVendor.lead_time_days,
         safetyStock
       )
@@ -202,15 +264,20 @@ export class ReplenishmentEngine {
       
       // Check if replenishment is needed
       if (availableQuantity <= reorderPoint) {
-        const targetOnHand = this.calculateTargetOnHand(averageDaily, daysOfCover)
+        const targetOnHand = this.calculateTargetOnHand(forecast.averageDaily, daysOfCover)
         const quantityNeeded = Math.max(0, targetOnHand - availableQuantity - inventory.in_transit_quantity)
 
         if (quantityNeeded > 0) {
-          // Determine priority based on how far below ROP we are
+          // Determine priority based on how far below ROP we are and ML confidence
           let priority: 'HIGH' | 'MEDIUM' | 'LOW' = 'MEDIUM'
-          if (availableQuantity <= safetyStock) {
+          
+          // Factor in seasonality and confidence for priority calculation
+          const adjustedReorderPoint = reorderPoint * forecast.seasonalityFactor
+          const confidenceAdjustment = forecast.confidence > 0.8 ? 1.2 : forecast.confidence > 0.6 ? 1.0 : 0.8
+          
+          if (availableQuantity <= safetyStock * confidenceAdjustment) {
             priority = 'HIGH'
-          } else if (availableQuantity <= reorderPoint * 0.8) {
+          } else if (availableQuantity <= adjustedReorderPoint * 0.8) {
             priority = 'MEDIUM'
           } else {
             priority = 'LOW'
@@ -220,11 +287,16 @@ export class ReplenishmentEngine {
             product_id: product.product_id,
             store_id: store.store_id,
             current_quantity: availableQuantity,
-            reorder_point: reorderPoint,
+            reorder_point: Math.round(adjustedReorderPoint),
             target_quantity: quantityNeeded,
             suggested_vendor_id: bestVendor.vendor_id,
             calculated_cost: quantityNeeded * bestVendor.cost_per_item,
-            priority
+            priority,
+            ml_forecast: {
+              confidence: forecast.confidence,
+              seasonality_factor: forecast.seasonalityFactor,
+              predicted_daily_usage: forecast.averageDaily
+            }
           })
         }
       }

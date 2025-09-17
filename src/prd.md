@@ -53,10 +53,20 @@
 - **Why it matters**: Ensures transparency and accountability throughout the supply chain
 - **Success criteria**: Users can track orders from submission to delivery
 
+### Machine Learning Forecasting Engine
+- **What it does**: Implements ensemble ML models (exponential smoothing, seasonal decomposition, linear regression, moving averages) to predict demand patterns with confidence intervals and seasonal adjustments
+- **Why it matters**: Enables proactive inventory management through sophisticated demand prediction, reducing both stockouts and overstock situations
+- **Success criteria**: Achieves >90% forecast accuracy, provides 7-30 day demand predictions with confidence intervals, integrates weather and seasonal event data
+
+### Seasonal Replenishment Automation
+- **What it does**: Automatically generates replenishment suggestions based on ML forecasts, seasonal patterns, weather data, and external events like holidays or promotions
+- **Why it matters**: Prevents stockouts during seasonal demand fluctuations while optimizing inventory costs through predictive analytics
+- **Success criteria**: Reduces manual replenishment decisions by 80%, maintains optimal inventory levels through seasonal variations
+
 ### Dashboard & Analytics
-- **What it does**: Role-specific dashboards showing pending actions, order metrics, and performance indicators
-- **Why it matters**: Enables proactive management and quick decision-making
-- **Success criteria**: Users have clear visibility into their responsibilities and performance
+- **What it does**: Role-specific dashboards showing pending actions, order metrics, ML forecast insights, and performance indicators
+- **Why it matters**: Enables proactive management and quick decision-making with data-driven insights
+- **Success criteria**: Users have clear visibility into their responsibilities, performance, and predictive analytics
 
 ## Design Direction
 

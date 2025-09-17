@@ -136,6 +136,11 @@ export interface ReplenishmentRequest {
   suggested_vendor_id: string
   calculated_cost: number
   priority: 'HIGH' | 'MEDIUM' | 'LOW'
+  ml_forecast?: {
+    confidence: number
+    seasonality_factor: number
+    predicted_daily_usage: number
+  }
 }
 
 // Enhanced replenishment suggestion for UI
