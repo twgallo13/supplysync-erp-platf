@@ -11,6 +11,7 @@ import { Approvals } from './components/views/approvals'
 import { Fulfillment } from './components/views/fulfillment'
 import { Receiving } from './components/views/receiving'
 import { Analytics } from './components/views/analytics'
+import { Replenishment } from './components/views/replenishment'
 import { Settings } from './components/views/settings'
 
 function AppContent() {
@@ -48,6 +49,8 @@ function AppContent() {
         return <Receiving onViewChange={setActiveView} />
       case 'analytics':
         return <Analytics onViewChange={setActiveView} />
+      case 'replenishment':
+        return <Replenishment onViewChange={setActiveView} />
       case 'settings':
         return <Settings onViewChange={setActiveView} />
       default:

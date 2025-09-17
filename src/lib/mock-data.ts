@@ -74,6 +74,9 @@ export const mockProducts: Product[] = [
     requires_dm_approval: false,
     is_active: true,
     tags: ['paper', 'printing', 'office'],
+    needGroup: 'COPY_PAPER',
+    equivalentUnit: { value: 5000, unit: 'sheets' },
+    supplyDurationDays: 90,
     vendors: [
       {
         vendor_id: 'ven_staples',
@@ -109,6 +112,9 @@ export const mockProducts: Product[] = [
     requires_dm_approval: false,
     is_active: true,
     tags: ['cleaning', 'glass', 'spray'],
+    needGroup: 'GLASS_CLEANER',
+    equivalentUnit: { value: 20, unit: 'oz' },
+    supplyDurationDays: 30,
     vendors: [
       {
         vendor_id: 'ven_sysco',
@@ -133,6 +139,9 @@ export const mockProducts: Product[] = [
     requires_dm_approval: true,
     is_active: true,
     tags: ['receipt', 'pos', 'thermal', 'restricted'],
+    needGroup: 'RECEIPT_PAPER',
+    equivalentUnit: { value: 12, unit: 'rolls' },
+    supplyDurationDays: 60,
     vendors: [
       {
         vendor_id: 'ven_posmate',
@@ -157,6 +166,9 @@ export const mockProducts: Product[] = [
     requires_dm_approval: false,
     is_active: true,
     tags: ['bags', 'plastic', 'shopping'],
+    needGroup: 'SHOPPING_BAGS',
+    equivalentUnit: { value: 1000, unit: 'bags' },
+    supplyDurationDays: 45,
     vendors: [
       {
         vendor_id: 'ven_uline',
@@ -181,6 +193,9 @@ export const mockProducts: Product[] = [
     requires_dm_approval: true,
     is_active: true,
     tags: ['sanitizer', 'health', 'safety', 'restricted'],
+    needGroup: 'HAND_SANITIZER',
+    equivalentUnit: { value: 1, unit: 'gallon' },
+    supplyDurationDays: 30,
     vendors: [
       {
         vendor_id: 'ven_purell',
@@ -191,6 +206,33 @@ export const mockProducts: Product[] = [
         vendorSkuMap: {
           sku: 'PU-HS-GAL',
           barcodeAliases: ['012345678911', '012345678912']
+        }
+      }
+    ]
+  },
+  {
+    product_id: 'prod_towels_001',
+    sku: 'SKU-PT-ROLL',
+    display_name: 'Paper Towels, Industrial Roll',
+    description: 'Heavy-duty paper towels for commercial use. Super absorbent, perforated sheets.',
+    category: 'Cleaning Supplies',
+    pack_quantity: 6,
+    requires_dm_approval: false,
+    is_active: true,
+    tags: ['paper', 'towels', 'cleaning', 'absorbent'],
+    needGroup: 'PAPER_TOWELS',
+    equivalentUnit: { value: 6, unit: 'rolls' },
+    supplyDurationDays: 60,
+    vendors: [
+      {
+        vendor_id: 'ven_sysco',
+        vendor_sku: 'SYS-PT-6R',
+        cost_per_item: 18.45,
+        lead_time_days: 2,
+        is_preferred: true,
+        vendorSkuMap: {
+          sku: 'SYS-PT-6R',
+          barcodeAliases: ['012345678913', '012345678914']
         }
       }
     ]

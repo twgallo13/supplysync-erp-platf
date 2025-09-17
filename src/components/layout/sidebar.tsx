@@ -8,6 +8,7 @@ import {
   CheckCircle, 
   Scan,
   ChartLine,
+  Robot,
   Gear,
   IconProps
 } from '@phosphor-icons/react'
@@ -62,6 +63,12 @@ const navItems: NavItem[] = [
     label: 'Receiving',
     key: 'receiving',
     roles: ['SM', 'FM']
+  },
+  {
+    icon: Robot,
+    label: 'Replenishment',
+    key: 'replenishment',
+    roles: ['FM', 'COST_ANALYST', 'ADMIN']
   },
   {
     icon: ChartLine,

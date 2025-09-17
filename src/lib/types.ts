@@ -102,3 +102,54 @@ export interface CartItem {
   quantity: number
   selected_vendor: Vendor
 }
+
+export interface ReplenishmentRule {
+  rule_id: string
+  product_id: string
+  store_id: string
+  reorder_point: number
+  target_quantity: number
+  safety_stock: number
+  lead_time_days: number
+  seasonal_multiplier: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface StockLevel {
+  product_id: string
+  store_id: string
+  current_quantity: number
+  reserved_quantity: number
+  available_quantity: number
+  last_updated: string
+}
+
+export interface ReplenishmentSuggestion {
+  suggestion_id: string
+  product_id: string
+  store_id: string
+  suggested_quantity: number
+  reason: 'LOW_STOCK' | 'SEASONAL' | 'PROMOTIONAL' | 'PREDICTIVE'
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+  cost_impact: number
+  created_at: string
+  expires_at: string
+  auto_approved: boolean
+}
+
+export interface AllotmentRequest {
+  request_id: string
+  store_id: string
+  product_id: string
+  requested_days: number
+  current_days: number
+  reason_code: string
+  comments?: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  requested_by: string
+  requested_at: string
+  reviewed_by?: string
+  reviewed_at?: string
+}
