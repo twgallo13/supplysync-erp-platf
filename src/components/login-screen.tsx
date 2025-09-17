@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Buildings, Shield, Users, ChartBar } from '@phosphor-icons/react'
 import { useAuth } from './auth-provider'
-import { UserRole } from '@/lib/types'
+import { UserRole } from '@/types'
 
 const roleInfo = {
   SM: {

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
@@ -15,9 +16,8 @@ import {
 import { useAuth } from '../auth-provider'
 import { cn } from '@/lib/utils'
 import { ForwardRefExoticComponent } from 'react'
-import { mockOrders } from '@/lib/mock-data'
-import { useKV } from '@github/spark/hooks'
-import { Order } from '@/lib/types'
+import { Order } from '@/types'
+import { apiService } from '@/services/api'
 
 interface NavItem {
   icon: ForwardRefExoticComponent<IconProps>
@@ -91,7 +91,22 @@ interface SidebarProps {
 
 export function Sidebar({ activeView, onViewChange }: SidebarProps) {
   const { user } = useAuth()
-  const [userOrders] = useKV<Order[]>('user-orders', [])
+  const [orders, setOrders] = useState<Order[]>([])
+
+  useEffect(() => {
+    if (!user) return
+    
+    const loadOrders = async () => {
+      try {
+        const ordersData = await apiService.getOrders()
+        setOrders(ordersData)
+      } catch (error) {
+        console.error('Error loading orders for sidebar:', error)
+      }
+    }
+    
+    loadOrders()
+  }, [user])
 
   if (!user) return null
 
@@ -100,10 +115,9 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
   )
 
   // Calculate dynamic badges
-  const allOrders = [...mockOrders, ...(userOrders || [])]
   const getDynamicBadge = (itemKey: string) => {
     if (itemKey === 'approvals' && ['DM', 'FM'].includes(user.role)) {
-      const pendingCount = allOrders.filter(order => {
+      const pendingCount = orders.filter(order => {
         if (user.role === 'DM') return order.status === 'PENDING_DM_APPROVAL'
         if (user.role === 'FM') return order.status === 'PENDING_FM_APPROVAL'
         return false
@@ -112,7 +126,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
     }
     
     if (itemKey === 'receiving' && ['SM', 'FM'].includes(user.role)) {
-      const inboundCount = allOrders.filter(order => 
+      const inboundCount = orders.filter(order => 
         ['IN_TRANSIT', 'PARTIALLY_DELIVERED'].includes(order.status) &&
         (user.role === 'FM' || order.store_id === user.assignment.id)
       ).length

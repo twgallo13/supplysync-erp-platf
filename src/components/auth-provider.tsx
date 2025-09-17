@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { User } from '@/lib/types'
-import { mockUsers } from '@/lib/mock-data'
+import { User } from '@/types'
+import { apiService } from '@/services/api'
 
 interface AuthContextType {
   user: User | null
@@ -16,26 +16,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Simulate checking for existing auth session
-    const timer = setTimeout(() => {
-      const savedRole = localStorage.getItem('demo-role')
-      if (savedRole) {
-        const mockUser = mockUsers.find(u => u.role === savedRole)
-        if (mockUser) {
-          setUser(mockUser)
+    // Check for existing session
+    const checkAuth = async () => {
+      try {
+        const savedRole = localStorage.getItem('demo-role')
+        if (savedRole) {
+          // For demo purposes, set user based on saved role
+          const currentUser = await apiService.getCurrentUser()
+          if (currentUser) {
+            setUser(currentUser)
+          }
         }
+      } catch (error) {
+        console.error('Auth check failed:', error)
+      } finally {
+        setIsLoading(false)
       }
-      setIsLoading(false)
-    }, 500)
+    }
 
-    return () => clearTimeout(timer)
+    checkAuth()
   }, [])
 
-  const login = (role: User['role']) => {
-    const mockUser = mockUsers.find(u => u.role === role)
-    if (mockUser) {
-      setUser(mockUser)
-      localStorage.setItem('demo-role', role)
+  const login = async (role: User['role']) => {
+    try {
+      // For demo purposes, we'll simulate login based on role
+      const currentUser = await apiService.getCurrentUser()
+      if (currentUser) {
+        setUser({ ...currentUser, role })
+        localStorage.setItem('demo-role', role)
+      }
+    } catch (error) {
+      console.error('Login failed:', error)
     }
   }
 
