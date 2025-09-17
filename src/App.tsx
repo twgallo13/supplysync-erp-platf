@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider, useAuth } from './components/auth-provider'
 import { LoginScreen } from './components/login-screen'
 import { Header } from './components/layout/header'
 import { Sidebar } from './components/layout/sidebar'
+import { MobileNavigation } from './components/layout/mobile-navigation'
 import { Dashboard } from './components/views/dashboard'
 import { Catalog } from './components/views/catalog'
 import { Orders } from './components/views/orders'
@@ -13,10 +14,24 @@ import { Receiving } from './components/views/receiving'
 import { Analytics } from './components/views/analytics'
 import { Replenishment } from './components/views/replenishment'
 import { Settings } from './components/views/settings'
+import { MobileScan } from './components/views/mobile-scan'
+import { MobileReceiving } from './components/mobile/mobile-receiving'
+import { MobileDashboard } from './components/views/mobile-dashboard'
 
 function AppContent() {
   const { user, isLoading } = useAuth()
   const [activeView, setActiveView] = useState('dashboard')
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   if (isLoading) {
     return (
@@ -33,7 +48,39 @@ function AppContent() {
     return <LoginScreen />
   }
 
-  const renderView = () => {
+  const renderMobileView = () => {
+    switch (activeView) {
+      case 'scan':
+        return <MobileScan onViewChange={setActiveView} />
+      case 'receiving':
+        return (
+          <div className="min-h-screen bg-background">
+            <header className="sticky top-0 z-50 bg-background border-b border-border">
+              <div className="px-4 py-3">
+                <h1 className="text-lg font-semibold text-foreground">Receiving</h1>
+              </div>
+            </header>
+            <MobileReceiving />
+            <MobileNavigation activeView={activeView} onViewChange={setActiveView} />
+          </div>
+        )
+      case 'orders':
+        return <Orders onViewChange={setActiveView} />
+      case 'analytics':
+        return <Analytics onViewChange={setActiveView} />
+      case 'settings':
+        return <Settings onViewChange={setActiveView} />
+      default:
+        return (
+          <div className="min-h-screen bg-background">
+            <MobileDashboard onViewChange={setActiveView} />
+            <MobileNavigation activeView={activeView} onViewChange={setActiveView} />
+          </div>
+        )
+    }
+  }
+
+  const renderDesktopView = () => {
     switch (activeView) {
       case 'dashboard':
         return <Dashboard onViewChange={setActiveView} />
@@ -58,13 +105,23 @@ function AppContent() {
     }
   }
 
+  // Mobile-first responsive design
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-background">
+        {renderMobileView()}
+      </div>
+    )
+  }
+
+  // Desktop layout
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <div className="flex">
         <Sidebar activeView={activeView} onViewChange={setActiveView} />
         <main className="flex-1">
-          {renderView()}
+          {renderDesktopView()}
         </main>
       </div>
     </div>
