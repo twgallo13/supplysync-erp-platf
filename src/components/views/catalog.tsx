@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
-import { MagnifyingGlass, ShoppingCart, Plus, Minus, Warning, Package } from '@phosphor-icons/react'
+import { MagnifyingGlass, ShoppingCart, Plus, Minus, Warning, Package, X } from '@phosphor-icons/react'
 import { Product, CartItem } from '@/types'
 import { apiService } from '@/services/api'
 import { useAuth } from '@/components/auth-provider'
@@ -24,6 +24,7 @@ export function Catalog({ onViewChange }: CatalogProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false)
   const [showCart, setShowCart] = useState(false)
 
   useEffect(() => {
@@ -48,15 +49,28 @@ export function Catalog({ onViewChange }: CatalogProps) {
   }
 
   const filteredProducts = products.filter(product => {
-    if (searchTerm && !product.display_name.toLowerCase().includes(searchTerm.toLowerCase()) && 
-        !product.description.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        !product.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))) {
-      return false
-    }
+    // Must be active
+    if (!product.is_active) return false
+    
+    // Category filter
     if (selectedCategory && product.category !== selectedCategory) {
       return false
     }
-    return product.is_active
+    
+    // Search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase()
+      const matchesName = product.display_name.toLowerCase().includes(searchLower)
+      const matchesDescription = product.description.toLowerCase().includes(searchLower)
+      const matchesTags = product.tags.some(tag => tag.toLowerCase().includes(searchLower))
+      const matchesSku = product.sku.toLowerCase().includes(searchLower)
+      
+      if (!matchesName && !matchesDescription && !matchesTags && !matchesSku) {
+        return false
+      }
+    }
+    
+    return true
   })
 
   const addToCart = (product: Product, quantity: number = 1) => {
@@ -69,10 +83,16 @@ export function Catalog({ onViewChange }: CatalogProps) {
           : item
       ))
     } else {
+      const preferredVendor = product.vendors.find(v => v.is_preferred) || product.vendors[0]
+      if (!preferredVendor) {
+        toast.error('No vendor available for this product')
+        return
+      }
+      
       setCart([...cart, { 
         product_id: product.product_id, 
         quantity,
-        selected_vendor_id: product.vendors.find(v => v.is_preferred)?.vendor_id || product.vendors[0]?.vendor_id
+        selected_vendor_id: preferredVendor.vendor_id
       }])
     }
     
@@ -97,6 +117,8 @@ export function Catalog({ onViewChange }: CatalogProps) {
       if (!product) return total
       
       const selectedVendor = product.vendors.find(v => v.vendor_id === item.selected_vendor_id) || product.vendors[0]
+      if (!selectedVendor) return total
+      
       return total + (selectedVendor.cost_per_item * item.quantity)
     }, 0)
   }
@@ -105,6 +127,7 @@ export function Catalog({ onViewChange }: CatalogProps) {
     if (!user?.assignment?.id || cart.length === 0) return
     
     try {
+      setIsSubmittingOrder(true)
       await apiService.createOrder(cart, user.assignment.id, user.user_id)
       setCart([])
       setShowCart(false)
@@ -113,6 +136,8 @@ export function Catalog({ onViewChange }: CatalogProps) {
     } catch (error) {
       console.error('Error submitting order:', error)
       toast.error('Failed to submit order')
+    } finally {
+      setIsSubmittingOrder(false)
     }
   }
 
@@ -139,6 +164,7 @@ export function Catalog({ onViewChange }: CatalogProps) {
           onClick={() => setShowCart(true)}
           className="relative"
           disabled={cart.length === 0}
+          aria-label={`Shopping cart with ${cart.reduce((sum, item) => sum + item.quantity, 0)} items`}
         >
           <ShoppingCart className="mr-2" size={16} />
           Cart ({cart.length})
@@ -158,11 +184,23 @@ export function Catalog({ onViewChange }: CatalogProps) {
             placeholder="Search products..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 pr-10"
+            aria-label="Search products"
           />
+          {searchTerm && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+              onClick={() => setSearchTerm('')}
+              aria-label="Clear search"
+            >
+              <X size={14} />
+            </Button>
+          )}
         </div>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="w-full sm:w-[200px]">
+          <SelectTrigger className="w-full sm:w-[200px]" aria-label="Filter by category">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
@@ -174,8 +212,17 @@ export function Catalog({ onViewChange }: CatalogProps) {
         </Select>
       </div>
 
+      {/* Results count */}
+      {(searchTerm || selectedCategory) && (
+        <div className="text-sm text-muted-foreground">
+          {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+          {searchTerm && ` for "${searchTerm}"`}
+          {selectedCategory && ` in ${selectedCategory}`}
+        </div>
+      )}
+
       {/* Product Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
         {filteredProducts.map((product) => (
           <ProductCard 
             key={product.product_id} 
@@ -195,7 +242,7 @@ export function Catalog({ onViewChange }: CatalogProps) {
 
       {/* Cart Dialog */}
       <Dialog open={showCart} onOpenChange={setShowCart}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Shopping Cart</DialogTitle>
             <DialogDescription>
@@ -209,13 +256,14 @@ export function Catalog({ onViewChange }: CatalogProps) {
               if (!product) return null
               
               const selectedVendor = product.vendors.find(v => v.vendor_id === item.selected_vendor_id) || product.vendors[0]
+              if (!selectedVendor) return null
               
               return (
                 <div key={item.product_id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex-1">
                     <h4 className="font-medium">{product.display_name}</h4>
                     <p className="text-sm text-muted-foreground">
-                      ${selectedVendor.cost_per_item.toFixed(2)} each • {selectedVendor.vendor_name}
+                      ${selectedVendor.cost_per_item.toFixed(2)} each • {selectedVendor.vendor_name || 'Unknown Vendor'}
                     </p>
                     {product.requires_dm_approval && (
                       <Badge variant="outline" className="text-xs mt-1">
@@ -229,14 +277,16 @@ export function Catalog({ onViewChange }: CatalogProps) {
                       variant="outline"
                       size="sm"
                       onClick={() => updateCartQuantity(item.product_id, item.quantity - 1)}
+                      aria-label={`Decrease quantity for ${product.display_name}`}
                     >
                       <Minus size={12} />
                     </Button>
-                    <span className="w-8 text-center">{item.quantity}</span>
+                    <span className="w-8 text-center" aria-label={`Quantity: ${item.quantity}`}>{item.quantity}</span>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => updateCartQuantity(item.product_id, item.quantity + 1)}
+                      aria-label={`Increase quantity for ${product.display_name}`}
                     >
                       <Plus size={12} />
                     </Button>
@@ -249,6 +299,13 @@ export function Catalog({ onViewChange }: CatalogProps) {
                 </div>
               )
             })}
+            
+            {cart.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <ShoppingCart className="mx-auto h-12 w-12 mb-2" />
+                <p>Your cart is empty</p>
+              </div>
+            )}
           </div>
           
           {cart.length > 0 && (
@@ -265,8 +322,11 @@ export function Catalog({ onViewChange }: CatalogProps) {
             <Button variant="outline" onClick={() => setShowCart(false)}>
               Continue Shopping
             </Button>
-            <Button onClick={submitOrder} disabled={cart.length === 0}>
-              Submit Order
+            <Button 
+              onClick={submitOrder} 
+              disabled={cart.length === 0 || isSubmittingOrder}
+            >
+              {isSubmittingOrder ? 'Submitting...' : 'Submit Order'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -277,6 +337,20 @@ export function Catalog({ onViewChange }: CatalogProps) {
 
 function ProductCard({ product, onAddToCart }: { product: Product; onAddToCart: (product: Product) => void }) {
   const preferredVendor = product.vendors.find(v => v.is_preferred) || product.vendors[0]
+  
+  if (!preferredVendor) {
+    return (
+      <Card className="opacity-50">
+        <CardHeader>
+          <CardTitle className="text-lg">{product.display_name}</CardTitle>
+          <CardDescription>No vendor available</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">This product is currently unavailable.</p>
+        </CardContent>
+      </Card>
+    )
+  }
   
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -321,6 +395,7 @@ function ProductCard({ product, onAddToCart }: { product: Product; onAddToCart: 
         <Button 
           onClick={() => onAddToCart(product)}
           className="w-full"
+          aria-label={`Add ${product.display_name} to cart`}
         >
           <Plus className="mr-2" size={16} />
           Add to Cart
