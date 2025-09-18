@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Separator } from '@/components/ui/separator'
-import { MagnifyingGlass, ShoppingCart, Plus, Minus, Warning, Package, X } from '@phosphor-icons/react'
+import { Dialog, DialogContent, DialogDescrip
+import { MagnifyingGlass, ShoppingCart, Plus, Minus, Warning, Package, X } from '@phosphor-icons/react
+import { apiService } from '@/services/api'
+import { toast } from 'sonner'
+import { MagnifyingGlass, ShoppingCart, Plus, Minus, Warning, Package } from '@phosphor-icons/react'
 import { Product, CartItem } from '@/types'
 import { apiService } from '@/services/api'
 import { useAuth } from '@/components/auth-provider'
@@ -14,22 +14,21 @@ import { toast } from 'sonner'
 
 interface CatalogProps {
   onViewChange: (view: string) => void
-}
+ 
 
-export function Catalog({ onViewChange }: CatalogProps) {
-  const { user } = useAuth()
-  const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState<string[]>([])
-  const [cart, setCart] = useState<CartItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
-  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false)
-  const [showCart, setShowCart] = useState(false)
+  const [isSubmittingOrder, setIsSubmittingOrder] = useSt
 
-  useEffect(() => {
     loadData()
-  }, [])
+
+    try {
+      const [productsData, categoriesData] = await
+        apiService.getCategories()
+      setProducts(productsData)
+    } catch (error) {
+
+      setIsLoading(
+  }
+  const 
 
   const loadData = async () => {
     try {
@@ -49,28 +48,15 @@ export function Catalog({ onViewChange }: CatalogProps) {
   }
 
   const filteredProducts = products.filter(product => {
-    // Must be active
-    if (!product.is_active) return false
-    
-    // Category filter
+    if (searchTerm && !product.display_name.toLowerCase().includes(searchTerm.toLowerCase()) && 
+        !product.description.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        !product.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))) {
+      return false
+    }
     if (selectedCategory && product.category !== selectedCategory) {
       return false
     }
-    
-    // Search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase()
-      const matchesName = product.display_name.toLowerCase().includes(searchLower)
-      const matchesDescription = product.description.toLowerCase().includes(searchLower)
-      const matchesTags = product.tags.some(tag => tag.toLowerCase().includes(searchLower))
-      const matchesSku = product.sku.toLowerCase().includes(searchLower)
-      
-      if (!matchesName && !matchesDescription && !matchesTags && !matchesSku) {
-        return false
-      }
-    }
-    
-    return true
+    return product.is_active
   })
 
   const addToCart = (product: Product, quantity: number = 1) => {
@@ -83,16 +69,10 @@ export function Catalog({ onViewChange }: CatalogProps) {
           : item
       ))
     } else {
-      const preferredVendor = product.vendors.find(v => v.is_preferred) || product.vendors[0]
-      if (!preferredVendor) {
-        toast.error('No vendor available for this product')
-        return
-      }
-      
       setCart([...cart, { 
         product_id: product.product_id, 
         quantity,
-        selected_vendor_id: preferredVendor.vendor_id
+        selected_vendor_id: product.vendors.find(v => v.is_preferred)?.vendor_id || product.vendors[0]?.vendor_id
       }])
     }
     
@@ -117,8 +97,6 @@ export function Catalog({ onViewChange }: CatalogProps) {
       if (!product) return total
       
       const selectedVendor = product.vendors.find(v => v.vendor_id === item.selected_vendor_id) || product.vendors[0]
-      if (!selectedVendor) return total
-      
       return total + (selectedVendor.cost_per_item * item.quantity)
     }, 0)
   }
@@ -127,7 +105,6 @@ export function Catalog({ onViewChange }: CatalogProps) {
     if (!user?.assignment?.id || cart.length === 0) return
     
     try {
-      setIsSubmittingOrder(true)
       await apiService.createOrder(cart, user.assignment.id, user.user_id)
       setCart([])
       setShowCart(false)
@@ -136,8 +113,6 @@ export function Catalog({ onViewChange }: CatalogProps) {
     } catch (error) {
       console.error('Error submitting order:', error)
       toast.error('Failed to submit order')
-    } finally {
-      setIsSubmittingOrder(false)
     }
   }
 
@@ -164,7 +139,6 @@ export function Catalog({ onViewChange }: CatalogProps) {
           onClick={() => setShowCart(true)}
           className="relative"
           disabled={cart.length === 0}
-          aria-label={`Shopping cart with ${cart.reduce((sum, item) => sum + item.quantity, 0)} items`}
         >
           <ShoppingCart className="mr-2" size={16} />
           Cart ({cart.length})
@@ -184,23 +158,11 @@ export function Catalog({ onViewChange }: CatalogProps) {
             placeholder="Search products..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-10"
-            aria-label="Search products"
+            className="pl-10"
           />
-          {searchTerm && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-              onClick={() => setSearchTerm('')}
-              aria-label="Clear search"
-            >
-              <X size={14} />
-            </Button>
-          )}
         </div>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="w-full sm:w-[200px]" aria-label="Filter by category">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
@@ -212,17 +174,8 @@ export function Catalog({ onViewChange }: CatalogProps) {
         </Select>
       </div>
 
-      {/* Results count */}
-      {(searchTerm || selectedCategory) && (
-        <div className="text-sm text-muted-foreground">
-          {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
-          {searchTerm && ` for "${searchTerm}"`}
-          {selectedCategory && ` in ${selectedCategory}`}
-        </div>
-      )}
-
       {/* Product Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProducts.map((product) => (
           <ProductCard 
             key={product.product_id} 
@@ -242,7 +195,7 @@ export function Catalog({ onViewChange }: CatalogProps) {
 
       {/* Cart Dialog */}
       <Dialog open={showCart} onOpenChange={setShowCart}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Shopping Cart</DialogTitle>
             <DialogDescription>
@@ -256,7 +209,6 @@ export function Catalog({ onViewChange }: CatalogProps) {
               if (!product) return null
               
               const selectedVendor = product.vendors.find(v => v.vendor_id === item.selected_vendor_id) || product.vendors[0]
-              if (!selectedVendor) return null
               
               return (
                 <div key={item.product_id} className="flex items-center justify-between p-4 border rounded-lg">
@@ -277,16 +229,14 @@ export function Catalog({ onViewChange }: CatalogProps) {
                       variant="outline"
                       size="sm"
                       onClick={() => updateCartQuantity(item.product_id, item.quantity - 1)}
-                      aria-label={`Decrease quantity for ${product.display_name}`}
                     >
                       <Minus size={12} />
                     </Button>
-                    <span className="w-8 text-center" aria-label={`Quantity: ${item.quantity}`}>{item.quantity}</span>
+                    <span className="w-8 text-center">{item.quantity}</span>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => updateCartQuantity(item.product_id, item.quantity + 1)}
-                      aria-label={`Increase quantity for ${product.display_name}`}
                     >
                       <Plus size={12} />
                     </Button>
@@ -299,13 +249,6 @@ export function Catalog({ onViewChange }: CatalogProps) {
                 </div>
               )
             })}
-            
-            {cart.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                <ShoppingCart className="mx-auto h-12 w-12 mb-2" />
-                <p>Your cart is empty</p>
-              </div>
-            )}
           </div>
           
           {cart.length > 0 && (
@@ -313,94 +256,75 @@ export function Catalog({ onViewChange }: CatalogProps) {
               <Separator />
               <div className="flex justify-between items-center text-lg font-semibold">
                 <span>Total:</span>
-                <span>${getCartTotal().toFixed(2)}</span>
-              </div>
-            </>
-          )}
+                      <Minus size={12} />
+                    
+               
+            
           
-          <DialogFooter>
+                    </Bu
+                  <div className="text-right ml-4">
+                      ${(select
+                  </d
+              )
+            
+              <div cl
+                <p>Your c
+            )}
+          
+          
+   
+ 
+
+          
             <Button variant="outline" onClick={() => setShowCart(false)}>
-              Continue Shopping
-            </Button>
-            <Button 
-              onClick={submitOrder} 
-              disabled={cart.length === 0 || isSubmittingOrder}
+  
+          
             >
-              {isSubmittingOrder ? 'Submitting...' : 'Submit Order'}
-            </Button>
-          </DialogFooter>
+            </Butt
         </DialogContent>
-      </Dialog>
     </div>
-  )
+}
+function ProductCard({ product, onAddToCart }: { product: Product; onAddToCart: (prod
+  
+    return (
+        <CardHeader>
+          <CardDescription>No vendor available</Card
+        <CardContent>
+        </CardConten
+    )
+  
+    <Card className
+        <div className="flex items-start 
+            <CardTitle className="text-lg">{pr
+          </div>
+            <Badge variant="outline" className="ml-2">
+              Appro
+          )}
+      </CardH
+        <div c
+        
+            </Badge>
+        </div>
+        <div className="space-y-2">
+            <span className="text-sm text-muted-foreground">Price:</span>
+          </div>
+            <span className="text-sm text-muted-foreground">P
+          </div>
+            <span className="text-sm text-muted-foreground">Lead Tim
+          </div>
+        
+          onClick={() => onAddToCart(product)}
+          aria-label={`Add ${product.display_name} to cart`}
+          <Plus 
+        </Butt
+    </Ca
 }
 
-function ProductCard({ product, onAddToCart }: { product: Product; onAddToCart: (product: Product) => void }) {
-  const preferredVendor = product.vendors.find(v => v.is_preferred) || product.vendors[0]
-  
-  if (!preferredVendor) {
-    return (
-      <Card className="opacity-50">
-        <CardHeader>
-          <CardTitle className="text-lg">{product.display_name}</CardTitle>
-          <CardDescription>No vendor available</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">This product is currently unavailable.</p>
-        </CardContent>
-      </Card>
-    )
-  }
-  
-  return (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg">{product.display_name}</CardTitle>
-            <CardDescription className="mt-1">{product.description}</CardDescription>
-          </div>
-          {product.requires_dm_approval && (
-            <Badge variant="outline" className="ml-2">
-              <Warning size={12} className="mr-1" />
-              Approval Required
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-1">
-          {product.tags.map(tag => (
-            <Badge key={tag} variant="secondary" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-        </div>
-        
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Price:</span>
-            <span className="font-semibold">${preferredVendor.cost_per_item.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Pack Size:</span>
-            <span className="text-sm">{product.pack_quantity}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Lead Time:</span>
-            <span className="text-sm">{preferredVendor.lead_time_days} days</span>
-          </div>
-        </div>
-        
-        <Button 
-          onClick={() => onAddToCart(product)}
-          className="w-full"
-          aria-label={`Add ${product.display_name} to cart`}
-        >
-          <Plus className="mr-2" size={16} />
-          Add to Cart
-        </Button>
-      </CardContent>
-    </Card>
-  )
-}
+
+
+
+
+
+
+
+
