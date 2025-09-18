@@ -31,7 +31,19 @@ function AppContent() {
     
     checkMobile()
     window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
+    // Hash-based deep link: #catalog or #catalog/<product_id>
+    const applyHash = () => {
+      const hash = window.location.hash || ''
+      if (hash.startsWith('#catalog')) {
+        setActiveView('catalog')
+      }
+    }
+    applyHash()
+    window.addEventListener('hashchange', applyHash)
+    return () => {
+      window.removeEventListener('resize', checkMobile)
+      window.removeEventListener('hashchange', applyHash)
+    }
   }, [])
 
   if (isLoading) {
@@ -110,8 +122,11 @@ function AppContent() {
     switch (activeView) {
       case 'dashboard':
         return <Dashboard onViewChange={setActiveView} />
-      case 'catalog':
-        return <Catalog onViewChange={setActiveView} />
+      case 'catalog': {
+        const hash = typeof window !== 'undefined' ? window.location.hash : ''
+        const deepLinkProductId = hash.startsWith('#catalog/') ? hash.split('/')[1] : undefined
+        return <Catalog onViewChange={setActiveView} deepLinkProductId={deepLinkProductId} />
+      }
       case 'orders':
         return <Orders onViewChange={setActiveView} />
       case 'approvals':

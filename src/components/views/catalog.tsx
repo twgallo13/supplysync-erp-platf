@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { MagnifyingGlass, ShoppingCart, Plus, Minus, Warning, Package, X } from '@phosphor-icons/react'
+import { MagnifyingGlass, ShoppingCart, Plus, Minus, Warning, Package, X, LinkSimple } from '@phosphor-icons/react'
 import { apiService } from '@/services/api'
 import { toast } from 'sonner'
 import { Product, CartItem } from '@/types'
@@ -14,9 +14,10 @@ import { useAuth } from '@/components/auth-provider'
 
 interface CatalogProps {
   onViewChange: (view: string) => void
+  deepLinkProductId?: string
 }
 
-export function Catalog({ onViewChange }: CatalogProps) {
+export function Catalog({ onViewChange, deepLinkProductId }: CatalogProps) {
   const { user } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<string[]>([])
@@ -26,11 +27,39 @@ export function Catalog({ onViewChange }: CatalogProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [showCart, setShowCart] = useState(false)
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [detailsProduct, setDetailsProduct] = useState<Product | null>(null)
 
   useEffect(() => {
     loadData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Open details when deep link is provided
+  useEffect(() => {
+    if (!deepLinkProductId || products.length === 0) return
+    const p = products.find((pr) => pr.product_id === deepLinkProductId)
+    if (p) {
+      openProductDetails(p, { updateHash: false })
+    }
+  }, [deepLinkProductId, products])
+
+  const openProductDetails = (product: Product, opts: { updateHash?: boolean } = { updateHash: true }) => {
+    setDetailsProduct(product)
+    setDetailsOpen(true)
+    if (opts.updateHash !== false) {
+      window.location.hash = `#catalog/${product.product_id}`
+    }
+  }
+
+  const closeProductDetails = () => {
+    setDetailsOpen(false)
+    setDetailsProduct(null)
+    // Keep user in catalog context when closing
+    if (window.location.hash.startsWith('#catalog/')) {
+      window.location.hash = '#catalog'
+    }
+  }
 
   const loadData = async () => {
     try {
@@ -188,7 +217,7 @@ export function Catalog({ onViewChange }: CatalogProps) {
       {/* Product Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProducts.map((product) => (
-          <ProductCard key={product.product_id} product={product} onAddToCart={addToCart} />
+          <ProductCard key={product.product_id} product={product} onAddToCart={addToCart} onOpenDetails={openProductDetails} />
         ))}
       </div>
 
@@ -288,6 +317,75 @@ export function Catalog({ onViewChange }: CatalogProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Product Details Dialog */}
+      <Dialog open={detailsOpen} onOpenChange={(open) => (open ? setDetailsOpen(true) : closeProductDetails())}>
+        <DialogContent className="max-w-xl">
+          {detailsProduct && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between gap-2">
+                  <span>{detailsProduct.display_name}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      const url = `${window.location.origin}${window.location.pathname}#catalog/${detailsProduct.product_id}`
+                      try {
+                        await navigator.clipboard.writeText(url)
+                        toast.success('Product link copied')
+                      } catch {
+                        toast.error('Failed to copy link')
+                      }
+                    }}
+                    aria-label="Copy product link"
+                  >
+                    <LinkSimple size={14} /> Copy link
+                  </Button>
+                </DialogTitle>
+                <DialogDescription>{detailsProduct.description}</DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">SKU</span>
+                  <span className="font-medium">{detailsProduct.sku}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Pack Qty</span>
+                  <span className="font-medium">{detailsProduct.pack_quantity}</span>
+                </div>
+                {detailsProduct.requires_dm_approval && (
+                  <Badge variant="outline" className="text-xs">
+                    <Warning size={12} className="mr-1" /> Requires Approval
+                  </Badge>
+                )}
+                <Separator />
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground">Vendors</div>
+                  {detailsProduct.vendors && detailsProduct.vendors.length > 0 ? (
+                    <div className="space-y-2">
+                      {detailsProduct.vendors.map((v) => (
+                        <div key={v.vendor_id} className="flex items-center justify-between">
+                          <span>{v.vendor_name}</span>
+                          <span className="text-sm">${v.cost_per_item.toFixed(2)} {v.is_preferred && <Badge className="ml-2" variant="secondary">Preferred</Badge>}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">No vendors available</div>
+                  )}
+                </div>
+                <div className="pt-2">
+                  <Button onClick={() => addToCart(detailsProduct)}>
+                    <Plus className="mr-2" size={16} /> Add to Cart
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -295,16 +393,25 @@ export function Catalog({ onViewChange }: CatalogProps) {
 function ProductCard({
   product,
   onAddToCart,
+  onOpenDetails,
 }: {
   product: Product
   onAddToCart: (product: Product, quantity?: number) => void
+  onOpenDetails: (product: Product) => void
 }) {
   const preferredVendor = product.vendors.find((v) => v.is_preferred) || product.vendors[0]
   if (!preferredVendor) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">{product.display_name}</CardTitle>
+          <CardTitle className="text-lg">
+            <button
+              onClick={() => onOpenDetails(product)}
+              className="underline-offset-4 hover:underline text-left"
+            >
+              {product.display_name}
+            </button>
+          </CardTitle>
           <CardDescription>No vendor available</CardDescription>
         </CardHeader>
       </Card>
@@ -316,7 +423,14 @@ function ProductCard({
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <div>
-            <CardTitle className="text-lg">{product.display_name}</CardTitle>
+            <CardTitle className="text-lg">
+              <button
+                onClick={() => onOpenDetails(product)}
+                className="underline-offset-4 hover:underline text-left"
+              >
+                {product.display_name}
+              </button>
+            </CardTitle>
             <CardDescription>{product.description}</CardDescription>
           </div>
           {product.requires_dm_approval && (
