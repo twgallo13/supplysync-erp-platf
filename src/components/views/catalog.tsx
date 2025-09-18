@@ -66,14 +66,18 @@ export function Catalog({ onViewChange }: CatalogProps) {
   })
 
   const addToCart = (product: Product, quantity = 1) => {
+    // Guard: don't add items without any vendors
+    if (!product.vendors || product.vendors.length === 0) {
+      toast.error(`No vendor available for ${product.display_name}`)
+      return
+    }
     setCart((prev) => {
       const existing = prev.find((i) => i.product_id === product.product_id)
-      const vendorId = product.vendors.find((v) => v.is_preferred)?.vendor_id || product.vendors[0]?.vendor_id
+      const vendorId =
+        product.vendors.find((v) => v.is_preferred)?.vendor_id || product.vendors[0]?.vendor_id
       if (existing) {
         return prev.map((i) =>
-          i.product_id === product.product_id
-            ? { ...i, quantity: i.quantity + quantity }
-            : i,
+          i.product_id === product.product_id ? { ...i, quantity: i.quantity + quantity } : i,
         )
       }
       return [
@@ -101,7 +105,8 @@ export function Catalog({ onViewChange }: CatalogProps) {
       if (!product) return total
       const selectedVendor =
         product.vendors.find((v) => v.vendor_id === item.selected_vendor_id) || product.vendors[0]
-      return total + selectedVendor.cost_per_item * item.quantity
+      const price = selectedVendor?.cost_per_item ?? 0
+      return total + price * item.quantity
     }, 0)
   }
 
@@ -202,6 +207,18 @@ export function Catalog({ onViewChange }: CatalogProps) {
             <DialogTitle>Shopping Cart</DialogTitle>
             <DialogDescription>Review your order before submitting</DialogDescription>
           </DialogHeader>
+          {/* Warn if any items have no available vendor */}
+          {cart.some((ci) => {
+            const p = products.find((p) => p.product_id === ci.product_id)
+            return !p || !p.vendors || p.vendors.length === 0
+          }) && (
+            <div className="flex items-center gap-2 p-3 border rounded-md bg-amber-50 text-amber-900">
+              <Warning size={16} />
+              <span>
+                Some items have no available vendor. Remove them to proceed.
+              </span>
+            </div>
+          )}
 
           <div className="space-y-4 max-h-96 overflow-y-auto">
             {cart.map((item) => {
@@ -213,9 +230,13 @@ export function Catalog({ onViewChange }: CatalogProps) {
                 <div key={item.product_id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex-1">
                     <h4 className="font-medium">{product.display_name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      ${selectedVendor.cost_per_item.toFixed(2)} each • {selectedVendor.vendor_name || 'Unknown Vendor'}
-                    </p>
+                    {selectedVendor ? (
+                      <p className="text-sm text-muted-foreground">
+                        ${selectedVendor.cost_per_item.toFixed(2)} each • {selectedVendor.vendor_name || 'Unknown Vendor'}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-destructive">No vendor available</p>
+                    )}
                     {product.requires_dm_approval && (
                       <Badge variant="outline" className="text-xs mt-1">
                         <Warning size={12} className="mr-1" /> Requires Approval
@@ -232,7 +253,7 @@ export function Catalog({ onViewChange }: CatalogProps) {
                     </Button>
                   </div>
                   <div className="text-right ml-4">
-                    <p className="font-medium">${(selectedVendor.cost_per_item * item.quantity).toFixed(2)}</p>
+                    <p className="font-medium">{selectedVendor ? `$${(selectedVendor.cost_per_item * item.quantity).toFixed(2)}` : '—'}</p>
                   </div>
                 </div>
               )
@@ -250,7 +271,16 @@ export function Catalog({ onViewChange }: CatalogProps) {
                 <Button variant="outline" onClick={() => setShowCart(false)}>
                   <X className="mr-2" size={16} /> Close
                 </Button>
-                <Button onClick={submitOrder} disabled={isSubmittingOrder}>
+                <Button
+                  onClick={submitOrder}
+                  disabled={
+                    isSubmittingOrder ||
+                    cart.some((ci) => {
+                      const p = products.find((p) => p.product_id === ci.product_id)
+                      return !p || !p.vendors || p.vendors.length === 0
+                    })
+                  }
+                >
                   Submit Order
                 </Button>
               </div>
