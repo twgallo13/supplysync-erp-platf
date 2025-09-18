@@ -14,7 +14,7 @@ import {
   Globe,
   Shield,
   Database,
-  ChevronRight
+  CaretRight
 } from '@phosphor-icons/react'
 import { MobileLayout } from '../layout/mobile-layout'
 import { HapticSettingsCard } from '../mobile/haptic-settings'
@@ -163,7 +163,7 @@ export function MobileSettings({ onViewChange }: MobileSettingsProps) {
             )}
           </div>
         </div>
-        {item.action && <ChevronRight size={16} className="text-muted-foreground" />}
+        {item.action && <CaretRight size={16} className="text-muted-foreground" />}
       </div>
     )
   }

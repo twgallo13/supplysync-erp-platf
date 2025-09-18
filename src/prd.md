@@ -1,113 +1,126 @@
-# SupplySync ERP - Mobile Operations Interface
+# SupplySync ERP - Product Requirements Document
 
 ## Core Purpose & Success
-- **Mission Statement**: Create a mobile-first interface that enables warehouse and store floor workers to efficiently manage receiving, inventory, and basic operations using mobile devices and tablets.
-- **Success Indicators**: 
-  - Reduce receiving time by 40% through streamlined mobile workflows
-  - Achieve 95% barcode scan success rate on mobile devices
-  - Enable single-handed operation for common tasks
-- **Experience Qualities**: Fast, Intuitive, Reliable
+
+**Mission Statement**: SupplySync ERP is a mobile-first enterprise platform that centralizes non-merchandise supply management across multi-location retail networks, ensuring operational continuity through predictive automation and strict governance.
+
+**Success Indicators**: 
+- Zero stockouts of mission-critical supplies
+- <200ms API response times for warehouse operations
+- 95%+ mobile user satisfaction for floor operations
+- Complete audit trail for all transactions
+
+**Experience Qualities**: Fast, Reliable, Auditable
 
 ## Project Classification & Approach
-- **Complexity Level**: Light Application (mobile-optimized workflows with touch interactions)
-- **Primary User Activity**: Acting (scanning, receiving, quick data entry)
+
+**Complexity Level**: Complex Application (advanced functionality, role-based access, real-time operations)
+
+**Primary User Activity**: Acting (approving orders, scanning items, processing receipts)
 
 ## Thought Process for Feature Selection
-- **Core Problem Analysis**: Warehouse and store workers need quick, reliable access to receiving and inventory functions while mobile
-- **User Context**: Workers using phones/tablets in warehouse/store environments with limited time and potentially gloved hands
-- **Critical Path**: Login → Scan → Receive/Update → Confirm → Continue
-- **Key Moments**: 
-  1. Barcode scanning with immediate feedback
-  2. Quick quantity adjustments with large touch targets
-  3. Batch operations for efficiency
+
+**Core Problem Analysis**: Fragmented supply chain processes cause stockouts and inefficient procurement across retail locations.
+
+**User Context**: Store managers need quick ordering, warehouse staff need efficient receiving, facility managers need oversight - all on mobile devices in operational environments.
+
+**Critical Path**: Login → Role-based dashboard → Primary action (order/approve/scan) → Confirmation with haptic feedback
+
+**Key Moments**: 
+1. Successful barcode scan with haptic confirmation
+2. Order approval with immediate status update
+3. Emergency stockout alert with priority escalation
 
 ## Essential Features
 
-### Mobile Receiving Interface
-- Large, touch-friendly buttons and inputs optimized for gloved hands
-- Camera-based barcode scanning with haptic feedback
-- Batch receiving mode for processing multiple items quickly
-- Offline capability for areas with poor connectivity
+### Mobile-First Operations
+- **Functionality**: Touch-optimized interface with 44px+ touch targets, gesture support
+- **Purpose**: Enable warehouse and store floor operations on mobile devices
+- **Success Criteria**: <200ms interaction response, haptic feedback on all critical actions
 
-### Inventory Quick Actions
-- One-tap common actions (receive all, mark complete, flag exception)
-- Voice input support for hands-free quantity entry
-- Quick access to product images and details
-- Exception handling workflow for damaged/missing items
+### Barcode Scanning & Receiving
+- **Functionality**: Camera-based scanning with haptic feedback, batch processing, exception handling
+- **Purpose**: Streamline receiving operations and inventory management
+- **Success Criteria**: 95%+ scan accuracy, sub-second scan-to-action time
 
-### Mobile-First Navigation
-- Bottom navigation bar for thumb-friendly access
-- Swipe gestures for common actions
-- Progressive web app (PWA) capabilities
-- Responsive design scaling from phone to tablet
+### Role-Based Workflows
+- **Functionality**: SM ordering, DM approvals, FM fulfillment - each with mobile-optimized interfaces
+- **Purpose**: Maintain governance while enabling mobile operations
+- **Success Criteria**: Zero unauthorized access, clear role-based navigation
 
 ## Design Direction
 
 ### Visual Tone & Identity
-- **Emotional Response**: Confident, efficient, professional
-- **Design Personality**: Clean, utilitarian, focused on speed and accuracy
-- **Visual Metaphors**: Industrial design language with clear iconography
-- **Simplicity Spectrum**: Minimal interface that prioritizes function over form
+**Emotional Response**: The interface should feel fast, reliable, and professional - instilling confidence in critical supply operations.
+
+**Design Personality**: Clean and utilitarian with subtle enterprise polish. Serious but approachable.
+
+**Visual Metaphors**: Clean lines suggesting efficiency, subtle depth for touch affordance, status indicators using familiar traffic light colors.
+
+**Simplicity Spectrum**: Minimal interface that prioritizes function over decoration.
 
 ### Color Strategy
-- **Color Scheme Type**: Monochromatic with high contrast accents
-- **Primary Color**: Deep blue (#1e40af) for primary actions and navigation
-- **Secondary Colors**: Gray scale for backgrounds and secondary elements
-- **Accent Color**: Orange (#f97316) for warnings, alerts, and important actions
-- **Color Psychology**: Blue conveys trust and reliability, orange draws attention to critical actions
-- **Color Accessibility**: High contrast ratios (7:1 minimum) for outdoor/warehouse visibility
-- **Foreground/Background Pairings**: White text on blue backgrounds, dark gray text on light backgrounds
+**Color Scheme Type**: Analogous with strategic accent colors
+
+**Primary Color**: Deep blue (#2563eb) - conveys trust and reliability for enterprise operations
+**Secondary Colors**: Neutral grays for backgrounds and supporting elements
+**Accent Color**: Amber (#f59e0b) for alerts and call-to-action elements
+**Success Color**: Green (#10b981) for confirmations and positive states
+**Error Color**: Red (#ef4444) for errors and critical alerts
+
+**Color Psychology**: Blues inspire trust in enterprise contexts, amber draws attention without alarm, green provides clear positive feedback.
+
+**Foreground/Background Pairings**:
+- Primary text (oklch(0.15 0 0)) on background (oklch(1 0 0)) - 13.5:1 contrast
+- White text on primary blue - 4.7:1 contrast  
+- Dark text on amber accent - 5.2:1 contrast
+- All pairings exceed WCAG AA requirements
 
 ### Typography System
-- **Font Pairing Strategy**: Single font family (Inter) with varied weights for hierarchy
-- **Typographic Hierarchy**: Large sizes for scanning results, medium for actions, small for details
-- **Font Personality**: Clean, highly legible, optimized for mobile screens
-- **Readability Focus**: Minimum 16px base font size, generous line spacing
-- **Typography Consistency**: Consistent sizing scale across all mobile breakpoints
-- **Which fonts**: Inter (already loaded)
-- **Legibility Check**: Optimized for small screens and outdoor lighting conditions
+**Font Pairing Strategy**: Single font family (Inter) with strategic weight variations
+**Typographic Hierarchy**: 
+- Headers: 600 weight, 1.2x line height
+- Body: 400 weight, 1.5x line height  
+- UI Labels: 500 weight, 1.4x line height
+
+**Font Personality**: Inter conveys modern professionalism and exceptional mobile legibility
+**Which fonts**: Inter (Google Fonts) for complete interface
+**Legibility Check**: Inter tested for warehouse lighting conditions and small mobile screens
 
 ### Visual Hierarchy & Layout
-- **Attention Direction**: Large scan button as primary focal point, secondary actions below
-- **White Space Philosophy**: Generous spacing between touch targets (minimum 44px)
-- **Grid System**: Flexible grid that adapts to screen orientation
-- **Responsive Approach**: Mobile-first design scaling up to tablet sizes
-- **Content Density**: Focused on single tasks with minimal cognitive load
+**Attention Direction**: Primary actions use color and size to guide attention, secondary actions use subtle styling
+**White Space Philosophy**: Generous spacing (16-24px) to prevent mis-taps and improve scannability
+**Grid System**: 4px base unit grid system for consistent spacing and alignment
+**Responsive Approach**: Mobile-first with progressive enhancement for tablets
+**Content Density**: Optimized for single-handed mobile use with critical information above the fold
 
-### Animations
-- **Purposeful Meaning**: Scanning animations provide immediate feedback, success states celebrate completion
-- **Hierarchy of Movement**: Scan feedback > status changes > navigation transitions
-- **Contextual Appropriateness**: Subtle animations that don't delay workflow
+### Animations & Micro-interactions
+**Purposeful Meaning**: Haptic feedback paired with visual animations confirm actions and guide workflow
+**Hierarchy of Movement**: Critical confirmations get both haptic and visual feedback, secondary actions get subtle visual cues
+**Contextual Appropriateness**: Professional animations that enhance rather than distract from operations
 
 ### UI Elements & Component Selection
-- **Component Usage**: Large buttons, bottom sheets for additional options, toast notifications for feedback
-- **Component Customization**: Oversized touch targets, high contrast borders, rounded corners for friendliness
-- **Component States**: Clear visual feedback for loading, success, error states
-- **Icon Selection**: Bold, recognizable icons from Phosphor set
-- **Component Hierarchy**: Primary scan button, secondary action buttons, tertiary navigation
-- **Spacing System**: 8px base unit with generous touch target spacing
-- **Mobile Adaptation**: Bottom navigation, swipe actions, pull-to-refresh patterns
+**Component Usage**: 
+- Cards for order summaries and product details
+- Buttons with generous touch targets (44px minimum)
+- Form inputs with clear focus states
+- Modal dialogs for confirmations requiring reason codes
+- Toast notifications paired with haptic feedback
 
-### Visual Consistency Framework
-- **Design System Approach**: Component-based with mobile-specific variants
-- **Style Guide Elements**: Touch target sizes, color usage, icon styles
-- **Visual Rhythm**: Consistent spacing and sizing creates predictable interface
-- **Brand Alignment**: Industrial efficiency aesthetic aligned with warehouse operations
+**Mobile Adaptation**: All components stack vertically on mobile, with simplified navigation patterns
+**Haptic Integration**: Strategic haptic feedback on scans, approvals, errors, and completions
 
 ### Accessibility & Readability
-- **Contrast Goal**: WCAG AAA compliance (7:1 contrast ratio) for outdoor/warehouse visibility
-- **Touch Accessibility**: Minimum 44px touch targets, adequate spacing between interactive elements
-- **Voice Support**: Voice input for quantity entry and navigation commands
-
-## Edge Cases & Problem Scenarios
-- **Potential Obstacles**: Poor lighting, network connectivity issues, damaged barcodes
-- **Edge Case Handling**: Offline mode, manual entry fallbacks, alternative scanning methods
-- **Technical Constraints**: Battery life, camera performance, varying screen sizes
+**Contrast Goal**: WCAG AA compliance minimum, targeting AAA where possible
+**Touch Targets**: All interactive elements 44px minimum
+**Screen Reader**: Full semantic markup with ARIA labels
+**Keyboard Navigation**: Complete keyboard support for desktop users
 
 ## Implementation Considerations
-- **Scalability Needs**: PWA architecture for easy deployment and updates
-- **Testing Focus**: Touch interaction testing, barcode scanning reliability, offline functionality
-- **Critical Questions**: Battery optimization, scanning accuracy in various lighting conditions
+**Mobile Performance**: Aggressive caching, lazy loading, optimized images
+**Offline Capabilities**: Core scanning and basic operations work offline
+**Enterprise Integration**: SSO/OIDC integration with haptic confirmation of login success
+**Haptic Strategy**: Native vibration API with different patterns for different action types
 
 ## Reflection
-This mobile-first approach transforms warehouse operations by putting powerful tools directly in workers' hands, eliminating trips to stationary computers and reducing processing time through intuitive touch interfaces and efficient workflows.
+This mobile-first approach uniquely addresses the reality that supply chain operations happen on the warehouse and store floor. The combination of enterprise-grade security with consumer-grade mobile UX, enhanced by strategic haptic feedback, creates an interface that works in real operational environments while maintaining strict governance and audit requirements.

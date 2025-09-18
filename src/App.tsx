@@ -17,6 +17,7 @@ import { Settings } from './components/views/settings'
 import { MobileScan } from './components/views/mobile-scan'
 import { MobileReceiving } from './components/mobile/mobile-receiving'
 import { MobileDashboard } from './components/views/mobile-dashboard'
+import { MobileLayout } from './components/layout/mobile-layout'
 
 function AppContent() {
   const { user, isLoading } = useAuth()
@@ -54,28 +55,53 @@ function AppContent() {
         return <MobileScan onViewChange={setActiveView} />
       case 'receiving':
         return (
-          <div className="min-h-screen bg-background">
-            <header className="sticky top-0 z-50 bg-background border-b border-border">
-              <div className="px-4 py-3">
-                <h1 className="text-lg font-semibold text-foreground">Receiving</h1>
-              </div>
-            </header>
+          <MobileLayout 
+            title="Receiving" 
+            activeView={activeView} 
+            onViewChange={setActiveView}
+          >
             <MobileReceiving />
-            <MobileNavigation activeView={activeView} onViewChange={setActiveView} />
-          </div>
+          </MobileLayout>
         )
       case 'orders':
-        return <Orders onViewChange={setActiveView} />
+        return (
+          <MobileLayout 
+            title="Orders" 
+            activeView={activeView} 
+            onViewChange={setActiveView}
+          >
+            <Orders onViewChange={setActiveView} />
+          </MobileLayout>
+        )
       case 'analytics':
-        return <Analytics onViewChange={setActiveView} />
+        return (
+          <MobileLayout 
+            title="Analytics" 
+            activeView={activeView} 
+            onViewChange={setActiveView}
+          >
+            <Analytics onViewChange={setActiveView} />
+          </MobileLayout>
+        )
       case 'settings':
-        return <Settings onViewChange={setActiveView} />
+        return (
+          <MobileLayout 
+            title="Settings" 
+            activeView={activeView} 
+            onViewChange={setActiveView}
+          >
+            <Settings onViewChange={setActiveView} />
+          </MobileLayout>
+        )
       default:
         return (
-          <div className="min-h-screen bg-background">
+          <MobileLayout 
+            showNavigation={true}
+            activeView={activeView} 
+            onViewChange={setActiveView}
+          >
             <MobileDashboard onViewChange={setActiveView} />
-            <MobileNavigation activeView={activeView} onViewChange={setActiveView} />
-          </div>
+          </MobileLayout>
         )
     }
   }

@@ -98,11 +98,7 @@ export function HapticSettingsCard({ className }: HapticSettingsProps) {
       <div className="p-4 space-y-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-primary/10 rounded-lg">
-            {settings.enabled ? (
-              <VibrateFill size={20} className="text-primary" />
-            ) : (
-              <Vibrate size={20} className="text-muted-foreground" />
-            )}
+            <Vibrate size={20} className={settings.enabled ? "text-primary" : "text-muted-foreground"} weight={settings.enabled ? "fill" : "regular"} />
           </div>
           <div className="flex-1">
             <h3 className="font-semibold">Haptic Feedback</h3>
